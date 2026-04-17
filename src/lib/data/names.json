@@ -1,0 +1,494 @@
+{
+    "4": {
+        "en_name": "Python",
+        "code": "Python"
+    },
+    "16": {
+        "en_name": "Thompson",
+        "code": "M1928A1"
+    },
+    "20": {
+        "en_name": "Vector",
+        "code": "Vector"
+    },
+    "28": {
+        "en_name": "MP7",
+        "code": "MP7"
+    },
+    "36": {
+        "en_name": "Springfield",
+        "code": "M1903"
+    },
+    "39": {
+        "en_name": "Mosin-Nagant",
+        "code": "M1891"
+    },
+    "46": {
+        "en_name": "Kar98k",
+        "code": "98K"
+    },
+    "48": {
+        "en_name": "WA2000",
+        "code": "WA2000"
+    },
+    "50": {
+        "en_name": "Lee Enfield",
+        "code": "MLEMK1"
+    },
+    "53": {
+        "en_name": "NTW-20",
+        "code": "NTW20"
+    },
+    "54": {
+        "en_name": "M16A1",
+        "code": "M16A1"
+    },
+    "55": {
+        "en_name": "M4A1",
+        "code": "M4A1"
+    },
+    "56": {
+        "en_name": "M4 SOPMOD II",
+        "code": "M4 SOPMOD II"
+    },
+    "57": {
+        "en_name": "ST AR-15",
+        "code": "AR15"
+    },
+    "62": {
+        "en_name": "Gr G41",
+        "code": "G41"
+    },
+    "64": {
+        "en_name": "Gr G36",
+        "code": "G36"
+    },
+    "65": {
+        "en_name": "416",
+        "code": "HK416"
+    },
+    "66": {
+        "en_name": "Type56-1",
+        "code": "56-1type"
+    },
+    "73": {
+        "en_name": "AUG",
+        "code": "AUG"
+    },
+    "95": {
+        "en_name": "Hanyang Type 88",
+        "code": "88type"
+    },
+    "96": {
+        "en_name": "Grizzly",
+        "code": "Grizzly"
+    },
+    "97": {
+        "en_name": "M950A",
+        "code": "M950A"
+    },
+    "99": {
+        "en_name": "Gr Mk23",
+        "code": "Mk23"
+    },
+    "101": {
+        "en_name": "UMP9",
+        "code": "UMP9"
+    },
+    "103": {
+        "en_name": "UMP45",
+        "code": "UMP45"
+    },
+    "104": {
+        "en_name": "Gr G36c",
+        "code": "G36C"
+    },
+    "109": {
+        "en_name": "Gr MG5",
+        "code": "MG5"
+    },
+    "114": {
+        "en_name": "Welrod MkII",
+        "code": "Welrod"
+    },
+    "115": {
+        "en_name": "Suomi",
+        "code": "KP31"
+    },
+    "119": {
+        "en_name": "OTs-14",
+        "code": "OTs14"
+    },
+    "121": {
+        "en_name": "Mk48",
+        "code": "Mk48"
+    },
+    "122": {
+        "en_name": "Gr G11",
+        "code": "G11"
+    },
+    "127": {
+        "en_name": "Type 79",
+        "code": "79type"
+    },
+    "128": {
+        "en_name": "M99",
+        "code": "M99"
+    },
+    "129": {
+        "en_name": "Type95",
+        "code": "95type"
+    },
+    "130": {
+        "en_name": "Type97",
+        "code": "97type"
+    },
+    "135": {
+        "en_name": "SR-3MP",
+        "code": "SR3MP"
+    },
+    "138": {
+        "en_name": "6P62",
+        "code": "6P62"
+    },
+    "142": {
+        "en_name": "Five-seven",
+        "code": "FN57"
+    },
+    "143": {
+        "en_name": "RO635",
+        "code": "RO635"
+    },
+    "148": {
+        "en_name": "IWS 2000",
+        "code": "IWS2000"
+    },
+    "149": {
+        "en_name": "AEK-999",
+        "code": "AEK999"
+    },
+    "155": {
+        "en_name": "M590",
+        "code": "M590"
+    },
+    "160": {
+        "en_name": "Saiga-12",
+        "code": "Saiga12"
+    },
+    "161": {
+        "en_name": "Type97S",
+        "code": "97typeS"
+    },
+    "163": {
+        "en_name": "AA-12",
+        "code": "AA12"
+    },
+    "168": {
+        "en_name": "Spitfire",
+        "code": "Spitfire"
+    },
+    "172": {
+        "en_name": "RFB",
+        "code": "RFB"
+    },
+    "173": {
+        "en_name": "PKP",
+        "code": "PKP"
+    },
+    "179": {
+        "en_name": "DSR-50",
+        "code": "DSR50"
+    },
+    "183": {
+        "en_name": "Contender",
+        "code": "Contender"
+    },
+    "188": {
+        "en_name": "S.A.T.8",
+        "code": "SAT8"
+    },
+    "194": {
+        "en_name": "K2",
+        "code": "K2"
+    },
+    "196": {
+        "en_name": "Zas M21",
+        "code": "ZastavaM21"
+    },
+    "197": {
+        "en_name": "Carcano M1891",
+        "code": "Carcano1891"
+    },
+    "198": {
+        "en_name": "Carcano M91/38",
+        "code": "Carcano1938"
+    },
+    "205": {
+        "en_name": "AN94",
+        "code": "AN94"
+    },
+    "206": {
+        "en_name": "AK12",
+        "code": "AK12"
+    },
+    "213": {
+        "en_name": "C-MS",
+        "code": "CBJMS"
+    },
+    "214": {
+        "en_name": "ADS",
+        "code": "ADS"
+    },
+    "215": {
+        "en_name": "MDR",
+        "code": "MDR"
+    },
+    "222": {
+        "en_name": "TAC-50",
+        "code": "TAC50"
+    },
+    "228": {
+        "en_name": "Sakura",
+        "code": "Type100"
+    },
+    "233": {
+        "en_name": "Px4 Storm",
+        "code": "Px4Storm"
+    },
+    "234": {
+        "en_name": "JS 9 mm",
+        "code": "JS9mm"
+    },
+    "238": {
+        "en_name": "QJY-88",
+        "code": "QJY88"
+    },
+    "242": {
+        "en_name": "P22",
+        "code": "P22"
+    },
+    "243": {
+        "en_name": "Type64",
+        "code": "Type64-AR"
+    },
+    "245": {
+        "en_name": "P90",
+        "code": "P90"
+    },
+    "253": {
+        "en_name": "Lewis",
+        "code": "Lewis"
+    },
+    "260": {
+        "en_name": "PA-15",
+        "code": "PA15"
+    },
+    "261": {
+        "en_name": "QBU-88",
+        "code": "QBU88"
+    },
+    "263": {
+        "en_name": "MG36",
+        "code": "MG36"
+    },
+    "266": {
+        "en_name": "R93",
+        "code": "R93"
+    },
+    "270": {
+        "en_name": "Type 4",
+        "code": "4type"
+    },
+    "276": {
+        "en_name": "Kord",
+        "code": "Kord"
+    },
+    "281": {
+        "en_name": "CAWS",
+        "code": "HKCAWS"
+    },
+    "282": {
+        "en_name": "DP-12",
+        "code": "DP12"
+    },
+    "289": {
+        "en_name": "R5",
+        "code": "R5RGP"
+    },
+    "290": {
+        "en_name": "Type89",
+        "code": "HowaType89"
+    },
+    "296": {
+        "en_name": "SL8",
+        "code": "SL8"
+    },
+    "303": {
+        "en_name": "HP-35",
+        "code": "BrowningHP"
+    },
+    "304": {
+        "en_name": "SAF",
+        "code": "SAF"
+    },
+    "305": {
+        "en_name": "Tabuk",
+        "code": "Tabuk"
+    },
+    "306": {
+        "en_name": "AK-Alfa",
+        "code": "AKAlfa"
+    },
+    "307": {
+        "en_name": "ZB-26",
+        "code": "ZB26"
+    },
+    "316": {
+        "en_name": "GeneralLiu",
+        "code": "GeneralLiu"
+    },
+    "318": {
+        "en_name": "VHS",
+        "code": "VHS"
+    },
+    "323": {
+        "en_name": "LTLX7000",
+        "code": "LTLX7000"
+    },
+    "337": {
+        "en_name": "De Lisle",
+        "code": "Delisle"
+    },
+    "338": {
+        "en_name": "SIG MCX",
+        "code": "SIGMCX"
+    },
+    "339": {
+        "en_name": "RPK-203",
+        "code": "RPK203"
+    },
+    "341": {
+        "en_name": "SP9",
+        "code": "SP9"
+    },
+    "351": {
+        "en_name": "M26-MASS",
+        "code": "M26MASS"
+    },
+    "356": {
+        "en_name": "A-545",
+        "code": "A545"
+    },
+    "359": {
+        "en_name": "Sterling",
+        "code": "Sterling"
+    },
+    "361": {
+        "en_name": "QBZ-191",
+        "code": "QBZ191"
+    },
+    "366": {
+        "en_name": "SPAS-15",
+        "code": "SPAS15"
+    },
+    "367": {
+        "en_name": "MK3A1",
+        "code": "MK3A1"
+    },
+    "369": {
+        "en_name": "M327",
+        "code": "M327"
+    },
+    "375": {
+        "en_name": "ColtWalker",
+        "code": "ColtWalker"
+    },
+    "376": {
+        "en_name": "Erma",
+        "code": "Erma"
+    },
+    "377": {
+        "en_name": "SCAR-H",
+        "code": "SCARH"
+    },
+    "390": {
+        "en_name": "HK433",
+        "code": "HK433"
+    },
+    "397": {
+        "en_name": "Stevens520",
+        "code": "Stevens520"
+    },
+    "402": {
+        "en_name": "MartiniHenry",
+        "code": "MartiniHenry"
+    },
+    "20039": {
+        "en_name": "M1891",
+        "code": "M1891Mod"
+    },
+    "20053": {
+        "en_name": "NTW-20",
+        "code": "NTW20Mod"
+    },
+    "20055": {
+        "en_name": "M4A1",
+        "code": "M4A1Mod"
+    },
+    "20056": {
+        "en_name": "M4 SOPMOD II",
+        "code": "M4 SOPMOD IIMod"
+    },
+    "20057": {
+        "en_name": "ST AR-15",
+        "code": "AR15Mod"
+    },
+    "20064": {
+        "en_name": "G36",
+        "code": "G36Mod"
+    },
+    "20065": {
+        "en_name": "HK416",
+        "code": "HK416Mod"
+    },
+    "20066": {
+        "en_name": "Type 56-1 A",
+        "code": "56-1typeMod"
+    },
+    "20095": {
+        "en_name": "Hanyang Type 88",
+        "code": "88type"
+    },
+    "20097": {
+        "en_name": "M950A",
+        "code": "M950AMod"
+    },
+    "20101": {
+        "en_name": "UMP9",
+        "code": "UMP9Mod"
+    },
+    "20103": {
+        "en_name": "UMP45",
+        "code": "UMP45Mod"
+    },
+    "20122": {
+        "en_name": "G11",
+        "code": "G11Mod"
+    },
+    "20143": {
+        "en_name": "RO635",
+        "code": "RO635Mod"
+    },
+    "20161": {
+        "en_name": "Type 97 S",
+        "code": "97typeSMod"
+    },
+    "20206": {
+        "en_name": "AK12",
+        "code": "AK12Mod"
+    },
+    "20293": {
+        "en_name": "AK-15",
+        "code": "AK15Mod"
+    }
+}

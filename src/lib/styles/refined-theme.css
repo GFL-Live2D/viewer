@@ -1,0 +1,95 @@
+/* Gallery theme: performance-optimised typography and utilities */
+
+/* Performance: CSS containment for panels */
+.panel-container {
+    contain: layout style paint;
+}
+
+/* Performance-safe spinner animation */
+.spinner {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* GPU-accelerated slide-in animation */
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Stagger Animation for Lists */
+.animate-stagger > * {
+    animation: slide-in-left 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.animate-stagger > :nth-child(1) {
+    animation-delay: 0ms;
+}
+
+.animate-stagger > :nth-child(2) {
+    animation-delay: 50ms;
+}
+
+.animate-stagger > :nth-child(3) {
+    animation-delay: 100ms;
+}
+
+.animate-stagger > :nth-child(4) {
+    animation-delay: 150ms;
+}
+
+.animate-stagger > :nth-child(5) {
+    animation-delay: 200ms;
+}
+
+/* Selection Color */
+::selection {
+    background-color: var(--accent-primary);
+    color: var(--surface-primary);
+}
+
+/* Very minimal, optional glow */
+.ambient-glow {
+    position: absolute;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, rgb(var(--accent-primary) / 0.08) 0%, transparent 70%);
+}
+
+/* Speed Draw Button Hover Effects */
+.speed-draw-button:hover:not([data-state='on']) {
+    border-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, var(--color-background-secondary));
+    color: var(--color-foreground);
+}
+
+.speed-draw-button[data-state='on']:hover {
+    background-color: var(--color-accent-secondary);
+}
+
+/* Speed Draw Icon Button Hover Effects */
+.speed-draw-icon-button:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-foreground);
+}

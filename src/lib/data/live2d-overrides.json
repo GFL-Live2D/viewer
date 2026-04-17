@@ -1,0 +1,25 @@
+{
+    "M950AMod_4302": {
+        "destroy": { "y": 500 }
+    },
+    "M950A_4302": {
+        "destroy": { "y": 500 }
+    },
+    "AKAlfa_4601": {
+        "normal": { "y": 600 }
+    },
+    "AUG_4802": {
+        "destroy": { "y": 500 }
+    },
+    "G36C_5201": {
+        "destroy": { "y": 500 }
+    },
+    "56-1type_7706": {
+        "normal": { "scale": 1.4 },
+        "destroy": { "y": -400, "scale": 1.2 }
+    },
+    "Stevens520_10407": {
+        "normal": { "y": -150, "scale": 1.4 },
+        "destroy": { "y": -150, "scale": 1.4 }
+    }
+}

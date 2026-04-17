@@ -1,0 +1,64 @@
+{
+    "PA15_5802": {
+        "normal": ["HEXIE"],
+        "destroy": ["Part1111111"]
+    },
+    "DP12_6102": {
+        "normal": ["HEXIE"],
+        "destroy": ["Part1111111"]
+    },
+    "ColtWalker_10302": {
+        "normal": ["Part33hexiexiongzhao"],
+        "destroy": ["HX"]
+    },
+    "DSR50_2101": {
+        "normal": ["PartHexie"]
+    },
+    "DSR50_10501": {
+        "normal": ["Part511tongchangrenhexiexiong1111111"],
+        "destroy": ["Part24"]
+    },
+    "Erma_8003": {
+        "destroy": ["ParHEXIE"]
+    },
+    "G36C_1202": {
+        "destroy": ["PartHexie"]
+    },
+    "Lewis_6901": {
+        "normal": ["Part3hx", "Part2xh", "huabianzhexh"]
+    },
+    "LTLX7000_10803": {
+        "normal": ["HX"],
+        "destroy": ["Part231111111"]
+    },
+    "M327_7601": {
+        "destroy": ["PartHEXIE"]
+    },
+    "MartiniHenry_11301": {
+        "destroy": ["HX"]
+    },
+    "HowaType89_6601": {
+        "normal": [
+            "Part4h",
+            "Part5h",
+            "Part6h",
+            "Part7h",
+            "Part8h",
+            "Part9h",
+            "Part10h",
+            "Part11h",
+            "Part12h",
+            "Part13h"
+        ]
+    },
+    "97typeS_5805": {
+        "normal": ["PartHX"],
+        "destroy": ["PartHX"]
+    },
+    "ZB26_5603": {
+        "normal": ["Part41hx1111111"]
+    },
+    "ZB26_7101": {
+        "normal": ["HX"]
+    }
+}
