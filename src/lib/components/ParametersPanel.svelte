@@ -42,6 +42,16 @@
             <span class="text-foreground text-sm">Follow animation</span>
         </label>
 
+        <label class="mt-3 flex cursor-pointer items-center gap-3">
+            <Checkbox
+                checked={$controller?.state.useCustomInitialPositioning ?? true}
+                onCheckedChange={(checked) => {
+                    if ($controller) $controller.state.useCustomInitialPositioning = checked;
+                }}
+            />
+            <span class="text-foreground text-sm">Custom initial positioning</span>
+        </label>
+
         <!-- Focus Strength Slider -->
         <div class="mt-4 flex flex-col gap-1">
             <div class="flex items-center justify-between">

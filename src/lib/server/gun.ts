@@ -32,30 +32,40 @@ export async function loadGunData() {
     // Load motion and voice data server-side (stays in memory, only serializes what's needed)
     const { motions, voice } = await getModelMotionAndVoiceData(Array.from(allMotionIds));
 
-    // Pre-filter motion/voice data by model ID to avoid client-side filtering
-    const motionDataByModel: Record<string, Record<number, any>> = {};
-    const voiceDataByModel: Record<string, Record<number, any>> = {};
-
-    for (const model of models) {
-        motionDataByModel[model.id] = {};
-        voiceDataByModel[model.id] = {};
-
-        for (const motionId of model.motions || []) {
-            if (motions[motionId]) {
-                motionDataByModel[model.id][motionId] = motions[motionId];
-            }
-            if (voice[motionId]) {
-                voiceDataByModel[model.id][motionId] = voice[motionId];
-            }
-        }
-    }
-
     // Load all variants for all models server-side
     const variantsByModel: Record<string, string[]> = {};
     const variantPromises = models.map(async (model) => {
         variantsByModel[model.directory] = await getGunModelVariants(model.directory);
     });
     await Promise.all(variantPromises);
+
+    // Pre-filtered by model/variant using STC 5037's is_hurt flag; motion filenames collide across variants.
+    const motionDataByModel: Record<string, Record<string, Record<number, any>>> = {};
+    const voiceDataByModel: Record<string, Record<string, Record<number, any>>> = {};
+
+    for (const model of models) {
+        motionDataByModel[model.id] = {};
+        voiceDataByModel[model.id] = {};
+
+        const variantNames = variantsByModel[model.directory] || [];
+        for (const variant of variantNames) {
+            motionDataByModel[model.id][variant] = {};
+            voiceDataByModel[model.id][variant] = {};
+        }
+
+        for (const motionId of model.motions || []) {
+            const motion = motions[motionId];
+            if (!motion) continue;
+
+            const variant = motion.is_hurt ? 'destroy' : 'normal';
+            if (!motionDataByModel[model.id][variant]) continue;
+
+            motionDataByModel[model.id][variant][motionId] = motion;
+            if (voice[motionId]) {
+                voiceDataByModel[model.id][variant][motionId] = voice[motionId];
+            }
+        }
+    }
 
     return {
         models,

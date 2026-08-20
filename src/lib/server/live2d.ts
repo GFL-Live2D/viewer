@@ -32,7 +32,7 @@ export interface MotionData {
     is_hurt: number;
     level: number;
     is_interrupt: number;
-    delay?: number;
+    delay: number;
 }
 
 export interface VoiceData {
@@ -48,7 +48,12 @@ export async function getGunModelIndex(): Promise<Live2DModelIndex[]> {
     // live2d.json is already filtered by the sync script to only include valid models
     return live2dData.map((entry) => {
         const fitGun = entry.fit_gun;
-        const gunInfo = fitGun && gunNames[fitGun] ? gunNames[fitGun] : null;
+        // MOD variants prefix the base gun id with a leading '2' (e.g. 205 -> 20205)
+        let gunInfo = fitGun && gunNames[fitGun] ? gunNames[fitGun] : null;
+        if (!gunInfo && fitGun) {
+            const baseId = String(Number(String(fitGun).replace(/^2/, '')));
+            gunInfo = gunNames[baseId] ?? null;
+        }
 
         // Try costume lookup using directory first, then fall back to code-based lookup
         let costumeName = costumes[entry.directory.toLowerCase()];

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte';
+    import { onDestroy, untrack } from 'svelte';
     import { browser } from '$app/environment';
     import { Info, ImageUp, ChevronDown } from '@lucide/svelte';
 
@@ -39,6 +39,7 @@
         variantsByModel,
         controller as storeController,
         uiState,
+        viewerPreferences,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
 
@@ -53,8 +54,8 @@
     } = $props<{
         models: Live2DModelIndex[];
         aliases: Record<string, string>;
-        motionData: Record<string, Record<number, any>>;
-        voiceData: Record<string, Record<number, any>>;
+        motionData: Record<string, Record<string, Record<number, any>>>;
+        voiceData: Record<string, Record<string, Record<number, any>>>;
         modelSearchTerms: Record<string, string>;
         variantsByModel: Record<string, string[]>;
         assetBaseUrl: string;
@@ -211,16 +212,40 @@
 
     let selectedModelName = $derived($modelNames[$selectedModel] ?? $selectedModel?.replace(/_/g, ' ') ?? '');
 
-    // Motion and voice data pre-filtered server-side by model ID
-    let filteredMotionData = $derived($selectedCharacterEntry ? motionData[$selectedCharacterEntry.id] : undefined);
-    let filteredVoiceData = $derived($selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id] : undefined);
+    // Motion and voice data pre-filtered server-side by model ID and variant
+    let filteredMotionData = $derived(
+        $selectedCharacterEntry ? motionData[$selectedCharacterEntry.id]?.[$selectedVariant] : undefined,
+    );
+    let filteredVoiceData = $derived(
+        $selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id]?.[$selectedVariant] : undefined,
+    );
 
     // Lifecycle: create controller when canvas is available
     $effect(() => {
         if (canvas && !controller) {
-            // console.log('[Page] Canvas mounted, creating Live2DController');
             controller = new Live2DController(canvas);
+
+            const prefs = untrack(() => $viewerPreferences);
+            controller.state.renderCaptionsOnCanvas = prefs.renderCaptionsOnCanvas;
+            controller.state.followParameterValues = prefs.followParameterValues;
+            controller.state.focusWeight = prefs.focusWeight;
+            controller.state.isAlwaysFocus = prefs.isAlwaysFocus;
+            controller.state.showHitboxDebug = prefs.showHitboxDebug;
+            controller.state.useCustomInitialPositioning = prefs.useCustomInitialPositioning;
         }
+    });
+
+    $effect(() => {
+        if (!controller) return;
+        const { renderCaptionsOnCanvas, followParameterValues, focusWeight, isAlwaysFocus, showHitboxDebug, useCustomInitialPositioning } = controller.state;
+        viewerPreferences.set({
+            renderCaptionsOnCanvas,
+            followParameterValues,
+            focusWeight,
+            isAlwaysFocus,
+            showHitboxDebug,
+            useCustomInitialPositioning,
+        });
     });
 
     // Sync to store for component access

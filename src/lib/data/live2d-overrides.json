@@ -21,5 +21,8 @@
     "Stevens520_10407": {
         "normal": { "y": -150, "scale": 1.4 },
         "destroy": { "y": -150, "scale": 1.4 }
+    },
+    "Saiga12_5402": {
+        "destroy": { "y": 300 }
     }
 }

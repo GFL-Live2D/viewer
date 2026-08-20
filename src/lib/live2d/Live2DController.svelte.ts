@@ -8,20 +8,6 @@ import Stats from 'stats.js';
 export const ZOOM_MIN = -20;
 export const ZOOM_MAX = 20;
 
-// Priority list of mouth parameters to check for audio delay detection
-// Scanned in order; first one found with movement determines audio timing
-const MOUTH_PARAM_PRIORITY = [
-    'ParamMouthOpenY',
-    'ParamMouthOpenX',
-    'ParamMouthForm',
-    'ParamMouthY',
-    'ParamMouthX',
-    'ParamMouthOpen',
-    'PARAM_MOUTH_OPEN_Y',
-    'ParamMHMouth',
-    'ParamMouthOpeY',
-];
-
 export enum ModelLoadingState {
     IDLE = 'idle',
     LOADING = 'loading',
@@ -36,6 +22,7 @@ interface MotionData {
     probability: number;
     touch_area: string;
     voice_string: string;
+    delay: number;
 }
 
 interface VoiceData {
@@ -77,7 +64,6 @@ interface PrivateMotion {
     _motionData?: {
         duration: number;
     };
-    _audioDelay?: number; // Audio playback delay calculated from mouth animation curves
     File?: string; // Sometimes attached directly
 }
 
@@ -146,7 +132,6 @@ export class Live2DController {
             opacity: number;
         }>;
         followParameterValues: boolean; // Auto-update parameters from animation
-        experimentalVoiceSync: boolean; // Use computed voice delay from mouth params
         forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
         renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
     }>({
@@ -170,7 +155,6 @@ export class Live2DController {
         parameters: [],
         parts: [],
         followParameterValues: false,
-        experimentalVoiceSync: true,
         forceLipSync: false,
         renderCaptionsOnCanvas: false,
     });
@@ -467,143 +451,6 @@ export class Live2DController {
             if (!currentModel) throw new Error('Model not initialized during setup');
 
             const motionManager = (currentModel.internalModel as unknown as ExtendedInternalModel).motionManager;
-
-            // Hook into createMotion EARLY to analyze audio delays from mouth parameter curves
-            const originalCreateMotion = (motionManager as any).createMotion.bind(motionManager);
-
-            (motionManager as any).createMotion = function (data: any, group: string, definition: any) {
-                // Analyze ALL mouth parameters and select the earliest oscillation start
-                let audioDelay = 0;
-                let minAudioDelay = Infinity;
-                let selectedParam: string | null = null;
-                const candidateDelays: Array<{ param: string; delay: number }> = [];
-
-                try {
-                    const curves = (data as any).Curves || [];
-
-                    for (const paramId of MOUTH_PARAM_PRIORITY) {
-                        const mouthCurve = curves.find((c: any) => c.Id === paramId);
-
-                        if (!mouthCurve || !mouthCurve.Segments) {
-                            continue;
-                        }
-
-                        const segments = mouthCurve.Segments;
-
-                        // Calculate change range for this parameter
-                        let minVal = Infinity;
-                        let maxVal = -Infinity;
-
-                        for (let i = 1; i < segments.length; i += 3) {
-                            const value = segments[i];
-                            minVal = Math.min(minVal, value);
-                            maxVal = Math.max(maxVal, value);
-                        }
-
-                        const change = maxVal - minVal;
-
-                        // Skip parameters without meaningful oscillation (mouth must actually flap)
-                        if (change <= 0.01) {
-                            continue;
-                        }
-
-                        let prevValue: number | null = null;
-                        let prevTime: number | null = null;
-                        let prevDirection: number | null = null;
-                        let oscillationStart = 0;
-
-                        // Seed with the very first keyframe (t=0) so direction comparison has a baseline
-                        let i = 0;
-                        if (segments.length >= 2) {
-                            prevValue = segments[1];
-                            prevTime = segments[0];
-                            i = 2;
-                        }
-
-                        // Parse segments (handles both linear and cubic)
-                        let stepCount = 1;
-                        while (i < segments.length && stepCount < 50) {
-                            const segmentType = segments[i];
-                            let time: number;
-                            let value: number;
-
-                            if (segmentType === 0 || segmentType === 2 || segmentType === 3) {
-                                // Linear, stepped, or inverse-stepped: 1 point follows
-                                time = segments[i + 1];
-                                value = segments[i + 2];
-                                i += 3;
-                            } else if (segmentType === 1) {
-                                // Cubic Bezier: 3 points follow (P1, P2, P3); only P3 endpoint matters here
-                                time = segments[i + 5];
-                                value = segments[i + 6];
-                                i += 7;
-                            } else {
-                                break;
-                            }
-
-                            let direction = 0;
-                            if (prevValue !== null) {
-                                if (value > prevValue) direction = 1;
-                                else if (value < prevValue) direction = -1;
-                            }
-
-                            // Direction change between two significant values marks the first mouth flap
-                            if (
-                                prevValue !== null &&
-                                Math.abs(prevValue) > 0.01 &&
-                                Math.abs(value) > 0.01 &&
-                                prevDirection &&
-                                prevDirection !== 0 &&
-                                direction !== 0 &&
-                                prevDirection !== direction
-                            ) {
-                                oscillationStart = prevTime || time;
-                                break;
-                            }
-
-                            prevValue = value;
-                            prevTime = time;
-                            if (direction !== 0) prevDirection = direction;
-                            stepCount++;
-                        }
-
-                        // Calculate delay for this parameter
-                        let paramDelay = 0;
-                        if (oscillationStart > 0) {
-                            paramDelay = oscillationStart;
-                        } else {
-                            for (let i = 0; i < segments.length; i += 3) {
-                                const value = segments[i + 1];
-                                if (Math.abs(value) > 0.01) {
-                                    paramDelay = segments[i];
-                                    break;
-                                }
-                            }
-                        }
-
-                        candidateDelays.push({ param: paramId, delay: paramDelay });
-
-                        if (paramDelay < minAudioDelay) {
-                            minAudioDelay = paramDelay;
-                            selectedParam = paramId;
-                        }
-                    }
-
-                    // Use the earliest delay found, or default to 0s
-                    if (selectedParam !== null && minAudioDelay !== Infinity) {
-                        audioDelay = minAudioDelay;
-                    } else {
-                        audioDelay = 0;
-                    }
-                } catch (e) {
-                    console.error(`Error analyzing audio delay for motion ${group}:`, e);
-                    audioDelay = 0;
-                }
-
-                const motion = originalCreateMotion(data, group, definition) as PrivateMotion;
-                motion._audioDelay = audioDelay;
-                return motion;
-            };
 
             const allMotionLoadPromises: Promise<any>[] = [];
             for (const groupName of this.motionGroups) {
@@ -1171,11 +1018,7 @@ export class Live2DController {
 
         // Play motion without audio - we'll handle timing manually
         model.motion(selectedGroupName, selectedIndex).then(() => {
-            // Get the audio delay from the motion's ParamMouthOpenY curve
-            const mm = this.model?.internalModel.motionManager as any;
-            const motionGroup = mm.motionGroups?.[selectedGroupName];
-            const loadedMotion = motionGroup?.[selectedIndex];
-            const audioDelay = (loadedMotion as any)?._audioDelay || 0;
+            const audioDelay = this.resolveAudioDelay(def?.File);
 
             // If audio URL exists, play it after the delay
             if (audioUrl) {
@@ -1537,6 +1380,11 @@ export class Live2DController {
         return undefined;
     }
 
+    private resolveAudioDelay(file: string | undefined): number {
+        const meta = file ? this.findMotionMetadata(file) : undefined;
+        return meta ? meta.delay / 1000 : 0;
+    }
+
     // -- Viewport Controls --
 
     getMotionGroups(): string[] {
@@ -1595,11 +1443,7 @@ export class Live2DController {
             this.state.caption = null;
         }
 
-        // Get audio delay from motion curve for manual playback or delayed library playback
-        const mm = this.model?.internalModel.motionManager as any;
-        const motionGroup = mm.motionGroups?.[groupName];
-        const loadedMotion = motionGroup?.[motionIndex] as PrivateMotion | undefined;
-        const audioDelay = loadedMotion?._audioDelay || 0;
+        const audioDelay = this.resolveAudioDelay(def.File);
 
         // Enable/disable library lip sync based on forceLipSync setting
         if (this.model?.internalModel) {
@@ -1611,25 +1455,22 @@ export class Live2DController {
             // Use library's integrated audio + additive lip sync
             const blobUrl = await this.loadAudio(audioUrl);
 
-            // Wait for delay if experimental sync is enabled
-            if (this.state.experimentalVoiceSync && audioDelay > 0) {
+            if (audioDelay > 0) {
                 await new Promise((resolve) => setTimeout(resolve, audioDelay * 1000));
             }
 
             await this.model.motion(groupName, motionIndex, 2, { sound: blobUrl, volume: 0.5 });
         } else {
-            // Original behavior: motion only, manual audio
+            // Without library lip sync, audio isn't tied to the motion call so timing is handled manually below
             await this.model.motion(groupName, motionIndex);
 
             // Play audio manually with delay if available
             if (audioUrl) {
                 const playAudioWithDelay = async () => {
                     try {
-                        // Load audio (should be instant if preloaded)
                         const blobUrl = await this.loadAudio(audioUrl);
 
-                        // Wait for the audio delay calculated from mouth animation
-                        if (this.state.experimentalVoiceSync && audioDelay > 0) {
+                        if (audioDelay > 0) {
                             await new Promise((resolve) => setTimeout(resolve, audioDelay * 1000));
                         }
 
@@ -1816,93 +1657,45 @@ export class Live2DController {
             centerY += displacement.y ?? 0;
         }
 
-        // Debug: Log all data relevant to centering
-        try {
-            // @ts-ignore
-            const canvasInfo = this.model.internalModel.coreModel.getModel().canvasinfo;
-            const originX = canvasInfo.CanvasOriginX;
-            const originY = canvasInfo.CanvasOriginY;
-            // console.log('[Controller] CanvasOrigin Info:', { originX, originY, canvasWidth, canvasHeight });
+        // CanvasOrigin centering and manual per-model overrides are opt-in;
+        // some deployments want raw geometric centering instead
+        if (this.state.useCustomInitialPositioning) {
+            try {
+                // @ts-ignore
+                const canvasInfo = this.model.internalModel.coreModel.getModel().canvasinfo;
+                const originX = canvasInfo.CanvasOriginX;
+                const originY = canvasInfo.CanvasOriginY;
 
-            // Visual Bounds (HitAreas)
-            const internal = model.internalModel as any;
-            const hitAreas = internal.hitAreas;
-            let minX = Infinity,
-                minY = Infinity,
-                maxX = -Infinity,
-                maxY = -Infinity;
-            let count = 0;
-            if (hitAreas) {
-                for (const key of Object.keys(hitAreas)) {
-                    const area = hitAreas[key];
-                    if (area.index >= 0) {
-                        const bounds = internal.getDrawableBounds(area.index);
-                        if (bounds.width > 0 && bounds.height > 0) {
-                            minX = Math.min(minX, bounds.x);
-                            minY = Math.min(minY, bounds.y);
-                            maxX = Math.max(maxX, bounds.x + bounds.width / 2);
-                            maxY = Math.max(maxY, bounds.y + bounds.height / 2);
-                            count++;
-                        }
+                const manualOverride = (live2dOverrides as any)[this.currentCharacterCode]?.[this.currentVariant];
+
+                if (manualOverride && typeof manualOverride.scale === 'number') {
+                    fitScale *= manualOverride.scale;
+                }
+
+                // CanvasOrigin centering aligns model's defined origin with screen center (not geometric center)
+                if (typeof originX === 'number' && typeof originY === 'number') {
+                    const offsetX = (width / 2 - originX) / 2;
+                    let offsetY = (height / 2 - originY) / 2;
+
+                    // Origin below center would push the model down when subtracted, so only lift up, never down
+                    if (offsetY < 0) {
+                        offsetY = 0;
                     }
-                }
-            }
-            if (count > 0 && minX !== Infinity) {
-                const visualCenterX = (minX + maxX) / 2;
-                const visualCenterY = (minY + maxY) / 2;
-                // console.log('[Controller] Visual Bounds (HitAreas):', {
-                //     minX,
-                //     minY,
-                //     maxX,
-                //     maxY,
-                //     visualCenterX,
-                //     visualCenterY,
-                // });
-            } else {
-                // console.log('[Controller] Visual Bounds: No valid hit areas found');
-            }
 
-            const manualOverride = (live2dOverrides as any)[this.currentCharacterCode]?.[this.currentVariant];
-
-            if (manualOverride && typeof manualOverride.scale === 'number') {
-                fitScale *= manualOverride.scale;
-                // console.log(
-                //     `[Controller] Applied Manual Override for ${this.currentCharacterCode}/${this.currentVariant}: Scale multiplier ${manualOverride.scale}`,
-                // );
-            }
-
-            // CanvasOrigin centering aligns model's defined origin with screen center (not geometric center)
-            if (typeof originX === 'number' && typeof originY === 'number') {
-                const offsetX = (width / 2 - originX) / 2;
-                let offsetY = (height / 2 - originY) / 2;
-
-                // "Only Rise" Heuristic:
-                // User Request: "clamp so this function only moves up if needed"
-                // If offsetY < 0, it means Origin is "Lower" than Center.
-                // Subtracting a negative would push the model DOWN. We ignore this.
-                if (offsetY < 0) {
-                    offsetY = 0;
+                    // Adjust center position
+                    centerX -= offsetX * fitScale;
+                    centerY -= offsetY * fitScale;
                 }
 
-                // Adjust center position
-                centerX -= offsetX * fitScale;
-                centerY -= offsetY * fitScale;
-
-                // console.log('[Controller] Applied CanvasOrigin offset (Only Rise):', { offsetX, offsetY, centerX, centerY });
+                // Manual overrides take highest priority for per-model position/scale adjustments
+                if (manualOverride && typeof manualOverride.y === 'number') {
+                    // Apply offset scaled by fitScale to maintain consistency across resolutions
+                    const manualLift = manualOverride.y * fitScale;
+                    centerY -= manualLift;
+                }
+            } catch (e) {
+                // Silently ignore centering calculation errors
             }
-
-            // Method C: Manual Overrides (Highest Priority for specific adjustments)
-            // Lifts the model further or scales it if specified in data/live2d-overrides.json
-            if (manualOverride && typeof manualOverride.y === 'number') {
-                // Apply offset scaled by fitScale to maintain consistency across resolutions
-                const manualLift = manualOverride.y * fitScale;
-                centerY -= manualLift;
-                // console.log(
-                //     `[Controller] Applied Manual Override for ${this.currentCharacterCode}/${this.currentVariant}: Lifting by ${manualOverride.y} (scaled: ${manualLift})`,
-                // );
-            }
-        } catch (e) {
-            // console.warn('[Controller] Failed to log centering debug info:', e);
         }
 
         // console.log('[Controller] Final model position:', { centerX, centerY, baseScale: fitScale * 0.5 });

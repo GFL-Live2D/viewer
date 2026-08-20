@@ -5,73 +5,31 @@ Generates live2d.json.
 """
 
 import json
-import struct
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from paths import DATA_DIR, GUN_LIVE2D, stc
-from stc_reader import StcReader
+sys.path.insert(0, str(Path(__file__).parent.parent / "gfl-data-miner-python"))
+from utils.format_stc import format_stc
+
+from paths import DATA_DIR, GUN_LIVE2D, ROOT, stc
+
+STC_MAPPING_DIR = ROOT / "gfl-data-miner-python" / "dataminer" / "stc-mapping" / "3081"
 
 
 def parse_stc_5014(binary_path: Path) -> List[Dict]:
-    """Parse STC 5014 (Live2D character info table)."""
+    """Parse STC 5014 (Live2D Info) via gfl-data-miner-python's header-driven format_stc."""
     if not binary_path.exists():
         print(f"[Error] {binary_path} not found")
         return []
 
-    with open(binary_path, "rb") as f:
-        data = f.read()
-
-    reader = StcReader(data)
-    reader.offset = 0xD7
-
-    entries = []
-
-    try:
-        while reader.offset < len(data):
-            if len(data) - reader.offset < 4:
-                break
-
-            id_val = reader.read_int()
-            motions = reader.read_string_strict()
-            code = reader.read_string_strict()
-            fit_gun = reader.read_int()
-            skin = reader.read_int()
-            mail_offset_x = reader.read_string_strict()
-            mail_offset_y = reader.read_string_strict()
-            mail_scale = reader.read_string_strict()
-            skin_type = reader.read_int()
-            skin_logo = reader.read_int()
-            fit_sangvis = reader.read_int()
-            reader.read_int()  # unknown field (0x05 in header)
-
-            if code:
-                entries.append({
-                    "id": id_val,
-                    "motions": motions,
-                    "code": code,
-                    "fit_gun": fit_gun,
-                    "skin": skin,
-                    "mail_offset_x": mail_offset_x,
-                    "mail_offset_y": mail_offset_y,
-                    "mail_scale": mail_scale,
-                    "skinType": skin_type,
-                    "skinLogo": skin_logo,
-                    "fit_sangvis": fit_sangvis,
-                })
-
-    except struct.error:
-        if len(entries) > 200:
-            print(f"[Warning] EOF at {reader.offset}/{len(data)} after {len(entries)} records")
-        else:
-            print(f"Failed at offset {reader.offset} (0x{reader.offset:x}) after {len(entries)} records")
-            raise
+    _, entries = format_stc(str(binary_path), str(STC_MAPPING_DIR / "5014.json"), long=True)
 
     if len(entries) < 10:
-        raise ValueError(f"Parsed only {len(entries)} records; parsing logic likely incorrect.")
+        raise ValueError(f"Parsed only {len(entries)} records. Parsing logic likely incorrect.")
 
     print(f"[Success] Parsed {len(entries)} records from STC 5014")
-    return entries
+    return [dict(e) for e in entries]
 
 
 def get_asset_directories(base_path: Path) -> Dict[str, str]:
@@ -104,6 +62,14 @@ def find_matching_directory(code: str, asset_map: Dict[str, str]) -> Optional[st
 def save_live2d_json(entries: List[Dict], filter_missing: bool = True):
     json_path = DATA_DIR / "live2d.json"
     json_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # fit_gun -1 marks NPC-only skins with no equippable gun (e.g. NPC_Kalina_*)
+    unfit_entries = [e for e in entries if e.get("fit_gun") == -1]
+    if unfit_entries:
+        print(f"[Info] Filtered out {len(unfit_entries)} entries with fit_gun -1:")
+        for entry in unfit_entries:
+            print(f"  - {entry.get('code', 'UNKNOWN')} (fit_gun -1)")
+    entries = [e for e in entries if e.get("fit_gun") != -1]
 
     if filter_missing:
         filtered = [e for e in entries if e.get("directory")]

@@ -30,15 +30,6 @@
             <h3 class="subtitle text-foreground-secondary mb-3 text-lg font-semibold tracking-wide">Voice</h3>
             <div class="flex flex-col space-y-2">
                 <div class="flex items-center space-x-2">
-                    <Checkbox id="voice-sync" bind:checked={$controller.state.experimentalVoiceSync} />
-                    <Label
-                        for="voice-sync"
-                        class="text-foreground-secondary text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                        Experimental voice to animation sync
-                    </Label>
-                </div>
-                <div class="flex items-center space-x-2">
                     <Checkbox id="force-lipsync" bind:checked={$controller.state.forceLipSync} />
                     <Label
                         for="force-lipsync"

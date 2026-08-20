@@ -30,6 +30,15 @@ export const uiState = writable({
     hideUI: false, // Master UI visibility toggle (used in direct gun mode)
 });
 
+export const viewerPreferences = writable({
+    renderCaptionsOnCanvas: false,
+    followParameterValues: false,
+    focusWeight: 3,
+    isAlwaysFocus: false,
+    showHitboxDebug: false,
+    useCustomInitialPositioning: true,
+});
+
 // Action to select a model and update characterEntry atomically
 export function selectModelFull(modelId: string, modelsArray: Live2DModelIndex[]) {
     const entry = modelsArray.find((m) => m.id === modelId);

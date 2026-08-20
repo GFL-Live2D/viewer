@@ -1,0 +1,3 @@
+[submodule "gfl-data-miner-python"]
+	path = gfl-data-miner-python
+	url = https://github.com/gf-data-tools/gfl-data-miner-python.git

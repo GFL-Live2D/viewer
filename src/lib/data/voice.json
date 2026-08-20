@@ -267,12 +267,12 @@
     {
         "id": 811,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're finally here, darling! What are we doing today? Anything is fine."
     },
     {
         "id": 812,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're finally here, darling! What are we doing today? Anything is fine."
     },
     {
         "id": 813,
@@ -776,18 +776,18 @@
     },
     {
         "id": 21102,
-        "voice_key": "DIALOGUE2",
-        "caption": "Ugh, my shoulders are a bit sore... B-but it's fine~!"
-    },
-    {
-        "id": 21103,
         "voice_key": "PHRASE",
         "caption": "Commander, what are you buying today?"
     },
     {
+        "id": 21103,
+        "voice_key": "LOADING",
+        "caption": "I'll wait for you and write a combat report on the way."
+    },
+    {
         "id": 21104,
-        "voice_key": "DIALOGUE6",
-        "caption": "Commander, what are your orders? If you increase the budget for the Logistics Department, I'll gladly help~!"
+        "voice_key": "DIALOGUE3",
+        "caption": "Com~man~der! Please focus on your task at hand!"
     },
     {
         "id": 21105,
@@ -1590,6 +1590,826 @@
         "caption": ""
     },
     {
+        "id": 21301,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 21302,
+        "voice_key": "DIALOGUE7",
+        "caption": "Oh, Commander! I'm just about to order some snacks. Would you like some too?"
+    },
+    {
+        "id": 21303,
+        "voice_key": "DIALOGUE6",
+        "caption": "Commander, what are your orders? If you increase the budget for the Logistics Department, I'll gladly help~!"
+    },
+    {
+        "id": 21304,
+        "voice_key": "DIALOGUE3",
+        "caption": "Com~man~der! Please focus on your task at hand!"
+    },
+    {
+        "id": 21305,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 21306,
+        "voice_key": "HELLO",
+        "caption": "Welcome back, Commander! I've listed out everything that needs to be done today! Please have a look!"
+    },
+    {
+        "id": 21307,
+        "voice_key": "kanban_musume_001",
+        "caption": ""
+    },
+    {
+        "id": 21308,
+        "voice_key": "kanban_musume_002",
+        "caption": ""
+    },
+    {
+        "id": 21309,
+        "voice_key": "kanban_musume_033",
+        "caption": ""
+    },
+    {
+        "id": 21310,
+        "voice_key": "kanban_musume_004",
+        "caption": ""
+    },
+    {
+        "id": 21311,
+        "voice_key": "kanban_musume_005",
+        "caption": ""
+    },
+    {
+        "id": 21312,
+        "voice_key": "kanban_musume_038",
+        "caption": ""
+    },
+    {
+        "id": 21313,
+        "voice_key": "kanban_musume_039",
+        "caption": ""
+    },
+    {
+        "id": 21314,
+        "voice_key": "kanban_musume_040",
+        "caption": ""
+    },
+    {
+        "id": 21315,
+        "voice_key": "kanban_musume_041",
+        "caption": ""
+    },
+    {
+        "id": 21316,
+        "voice_key": "kanban_musume_042",
+        "caption": ""
+    },
+    {
+        "id": 21317,
+        "voice_key": "kanban_musume_003",
+        "caption": ""
+    },
+    {
+        "id": 21318,
+        "voice_key": "kanban_musume_032",
+        "caption": ""
+    },
+    {
+        "id": 21319,
+        "voice_key": "kanban_musume_049",
+        "caption": ""
+    },
+    {
+        "id": 21320,
+        "voice_key": "kanban_musume_008",
+        "caption": ""
+    },
+    {
+        "id": 21321,
+        "voice_key": "kanban_musume_024",
+        "caption": ""
+    },
+    {
+        "id": 21322,
+        "voice_key": "kanban_musume_050",
+        "caption": ""
+    },
+    {
+        "id": 21323,
+        "voice_key": "kanban_musume_011",
+        "caption": ""
+    },
+    {
+        "id": 21324,
+        "voice_key": "kanban_musume_007",
+        "caption": ""
+    },
+    {
+        "id": 21325,
+        "voice_key": "kanban_musume_018",
+        "caption": ""
+    },
+    {
+        "id": 21326,
+        "voice_key": "kanban_musume_055",
+        "caption": ""
+    },
+    {
+        "id": 21327,
+        "voice_key": "kanban_musume_012",
+        "caption": ""
+    },
+    {
+        "id": 21328,
+        "voice_key": "kanban_musume_009",
+        "caption": ""
+    },
+    {
+        "id": 21329,
+        "voice_key": "kanban_musume_052",
+        "caption": ""
+    },
+    {
+        "id": 21330,
+        "voice_key": "kanban_musume_029",
+        "caption": ""
+    },
+    {
+        "id": 21331,
+        "voice_key": "kanban_musume_006",
+        "caption": ""
+    },
+    {
+        "id": 21332,
+        "voice_key": "kanban_musume_054",
+        "caption": ""
+    },
+    {
+        "id": 21333,
+        "voice_key": "kanban_musume_020",
+        "caption": ""
+    },
+    {
+        "id": 21334,
+        "voice_key": "kanban_musume_036",
+        "caption": ""
+    },
+    {
+        "id": 21335,
+        "voice_key": "kanban_musume_023",
+        "caption": ""
+    },
+    {
+        "id": 21336,
+        "voice_key": "kanban_musume_056",
+        "caption": ""
+    },
+    {
+        "id": 21337,
+        "voice_key": "kanban_musume_025",
+        "caption": ""
+    },
+    {
+        "id": 21338,
+        "voice_key": "kanban_musume_034",
+        "caption": ""
+    },
+    {
+        "id": 21339,
+        "voice_key": "kanban_musume_010",
+        "caption": ""
+    },
+    {
+        "id": 21340,
+        "voice_key": "kanban_musume_022",
+        "caption": ""
+    },
+    {
+        "id": 21341,
+        "voice_key": "kanban_musume_053",
+        "caption": ""
+    },
+    {
+        "id": 21342,
+        "voice_key": "kanban_musume_037",
+        "caption": ""
+    },
+    {
+        "id": 21343,
+        "voice_key": "kanban_musume_014",
+        "caption": ""
+    },
+    {
+        "id": 21344,
+        "voice_key": "kanban_musume_028",
+        "caption": ""
+    },
+    {
+        "id": 21345,
+        "voice_key": "kanban_musume_051",
+        "caption": ""
+    },
+    {
+        "id": 21346,
+        "voice_key": "kanban_musume_021",
+        "caption": ""
+    },
+    {
+        "id": 21347,
+        "voice_key": "kanban_musume_013",
+        "caption": ""
+    },
+    {
+        "id": 21348,
+        "voice_key": "kanban_musume_030",
+        "caption": ""
+    },
+    {
+        "id": 21349,
+        "voice_key": "kanban_musume_031",
+        "caption": ""
+    },
+    {
+        "id": 21350,
+        "voice_key": "kanban_musume_003",
+        "caption": ""
+    },
+    {
+        "id": 21351,
+        "voice_key": "kanban_musume_032",
+        "caption": ""
+    },
+    {
+        "id": 21352,
+        "voice_key": "kanban_musume_049",
+        "caption": ""
+    },
+    {
+        "id": 21353,
+        "voice_key": "kanban_musume_008",
+        "caption": ""
+    },
+    {
+        "id": 21354,
+        "voice_key": "kanban_musume_024",
+        "caption": ""
+    },
+    {
+        "id": 21355,
+        "voice_key": "kanban_musume_050",
+        "caption": ""
+    },
+    {
+        "id": 21356,
+        "voice_key": "kanban_musume_011",
+        "caption": ""
+    },
+    {
+        "id": 21357,
+        "voice_key": "kanban_musume_007",
+        "caption": ""
+    },
+    {
+        "id": 21358,
+        "voice_key": "kanban_musume_018",
+        "caption": ""
+    },
+    {
+        "id": 21359,
+        "voice_key": "kanban_musume_055",
+        "caption": ""
+    },
+    {
+        "id": 21360,
+        "voice_key": "kanban_musume_012",
+        "caption": ""
+    },
+    {
+        "id": 21361,
+        "voice_key": "kanban_musume_009",
+        "caption": ""
+    },
+    {
+        "id": 21362,
+        "voice_key": "kanban_musume_052",
+        "caption": ""
+    },
+    {
+        "id": 21363,
+        "voice_key": "kanban_musume_029",
+        "caption": ""
+    },
+    {
+        "id": 21364,
+        "voice_key": "kanban_musume_006",
+        "caption": ""
+    },
+    {
+        "id": 21365,
+        "voice_key": "kanban_musume_054",
+        "caption": ""
+    },
+    {
+        "id": 21366,
+        "voice_key": "kanban_musume_020",
+        "caption": ""
+    },
+    {
+        "id": 21367,
+        "voice_key": "kanban_musume_036",
+        "caption": ""
+    },
+    {
+        "id": 21368,
+        "voice_key": "kanban_musume_023",
+        "caption": ""
+    },
+    {
+        "id": 21369,
+        "voice_key": "kanban_musume_056",
+        "caption": ""
+    },
+    {
+        "id": 21370,
+        "voice_key": "kanban_musume_025",
+        "caption": ""
+    },
+    {
+        "id": 21371,
+        "voice_key": "kanban_musume_034",
+        "caption": ""
+    },
+    {
+        "id": 21372,
+        "voice_key": "kanban_musume_010",
+        "caption": ""
+    },
+    {
+        "id": 21373,
+        "voice_key": "kanban_musume_022",
+        "caption": ""
+    },
+    {
+        "id": 21374,
+        "voice_key": "kanban_musume_053",
+        "caption": ""
+    },
+    {
+        "id": 21375,
+        "voice_key": "kanban_musume_037",
+        "caption": ""
+    },
+    {
+        "id": 21376,
+        "voice_key": "kanban_musume_014",
+        "caption": ""
+    },
+    {
+        "id": 21377,
+        "voice_key": "kanban_musume_028",
+        "caption": ""
+    },
+    {
+        "id": 21378,
+        "voice_key": "kanban_musume_051",
+        "caption": ""
+    },
+    {
+        "id": 21379,
+        "voice_key": "kanban_musume_021",
+        "caption": ""
+    },
+    {
+        "id": 21380,
+        "voice_key": "kanban_musume_013",
+        "caption": ""
+    },
+    {
+        "id": 21381,
+        "voice_key": "kanban_musume_030",
+        "caption": ""
+    },
+    {
+        "id": 21382,
+        "voice_key": "kanban_musume_031",
+        "caption": ""
+    },
+    {
+        "id": 21401,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 21402,
+        "voice_key": "DIALOGUE10",
+        "caption": "Huh? I thought it's already time to host the late-night radio program, but it's actually still early."
+    },
+    {
+        "id": 21403,
+        "voice_key": "DIALOGUE3",
+        "caption": "Com~man~der! Please focus on your task at hand!"
+    },
+    {
+        "id": 21404,
+        "voice_key": "DIALOGUE7",
+        "caption": "Oh, Commander! I'm just about to order some snacks. Would you like some too?"
+    },
+    {
+        "id": 21405,
+        "voice_key": "MOOD",
+        "caption": ""
+    },
+    {
+        "id": 21406,
+        "voice_key": "HELLO",
+        "caption": "Welcome back, Commander! I've listed out everything that needs to be done today! Please have a look!"
+    },
+    {
+        "id": 21407,
+        "voice_key": "kanban_musume_001",
+        "caption": ""
+    },
+    {
+        "id": 21408,
+        "voice_key": "kanban_musume_002",
+        "caption": ""
+    },
+    {
+        "id": 21409,
+        "voice_key": "kanban_musume_033",
+        "caption": ""
+    },
+    {
+        "id": 21410,
+        "voice_key": "kanban_musume_004",
+        "caption": ""
+    },
+    {
+        "id": 21411,
+        "voice_key": "kanban_musume_005",
+        "caption": ""
+    },
+    {
+        "id": 21412,
+        "voice_key": "kanban_musume_038",
+        "caption": ""
+    },
+    {
+        "id": 21413,
+        "voice_key": "kanban_musume_039",
+        "caption": ""
+    },
+    {
+        "id": 21414,
+        "voice_key": "kanban_musume_040",
+        "caption": ""
+    },
+    {
+        "id": 21415,
+        "voice_key": "kanban_musume_041",
+        "caption": ""
+    },
+    {
+        "id": 21416,
+        "voice_key": "kanban_musume_042",
+        "caption": ""
+    },
+    {
+        "id": 21417,
+        "voice_key": "kanban_musume_003",
+        "caption": ""
+    },
+    {
+        "id": 21418,
+        "voice_key": "kanban_musume_032",
+        "caption": ""
+    },
+    {
+        "id": 21419,
+        "voice_key": "kanban_musume_049",
+        "caption": ""
+    },
+    {
+        "id": 21420,
+        "voice_key": "kanban_musume_008",
+        "caption": ""
+    },
+    {
+        "id": 21421,
+        "voice_key": "kanban_musume_024",
+        "caption": ""
+    },
+    {
+        "id": 21422,
+        "voice_key": "kanban_musume_050",
+        "caption": ""
+    },
+    {
+        "id": 21423,
+        "voice_key": "kanban_musume_011",
+        "caption": ""
+    },
+    {
+        "id": 21424,
+        "voice_key": "kanban_musume_007",
+        "caption": ""
+    },
+    {
+        "id": 21425,
+        "voice_key": "kanban_musume_018",
+        "caption": ""
+    },
+    {
+        "id": 21426,
+        "voice_key": "kanban_musume_055",
+        "caption": ""
+    },
+    {
+        "id": 21427,
+        "voice_key": "kanban_musume_012",
+        "caption": ""
+    },
+    {
+        "id": 21428,
+        "voice_key": "kanban_musume_009",
+        "caption": ""
+    },
+    {
+        "id": 21429,
+        "voice_key": "kanban_musume_052",
+        "caption": ""
+    },
+    {
+        "id": 21430,
+        "voice_key": "kanban_musume_029",
+        "caption": ""
+    },
+    {
+        "id": 21431,
+        "voice_key": "kanban_musume_006",
+        "caption": ""
+    },
+    {
+        "id": 21432,
+        "voice_key": "kanban_musume_054",
+        "caption": ""
+    },
+    {
+        "id": 21433,
+        "voice_key": "kanban_musume_020",
+        "caption": ""
+    },
+    {
+        "id": 21434,
+        "voice_key": "kanban_musume_036",
+        "caption": ""
+    },
+    {
+        "id": 21435,
+        "voice_key": "kanban_musume_023",
+        "caption": ""
+    },
+    {
+        "id": 21436,
+        "voice_key": "kanban_musume_056",
+        "caption": ""
+    },
+    {
+        "id": 21437,
+        "voice_key": "kanban_musume_025",
+        "caption": ""
+    },
+    {
+        "id": 21438,
+        "voice_key": "kanban_musume_034",
+        "caption": ""
+    },
+    {
+        "id": 21439,
+        "voice_key": "kanban_musume_010",
+        "caption": ""
+    },
+    {
+        "id": 21440,
+        "voice_key": "kanban_musume_022",
+        "caption": ""
+    },
+    {
+        "id": 21441,
+        "voice_key": "kanban_musume_053",
+        "caption": ""
+    },
+    {
+        "id": 21442,
+        "voice_key": "kanban_musume_037",
+        "caption": ""
+    },
+    {
+        "id": 21443,
+        "voice_key": "kanban_musume_014",
+        "caption": ""
+    },
+    {
+        "id": 21444,
+        "voice_key": "kanban_musume_028",
+        "caption": ""
+    },
+    {
+        "id": 21445,
+        "voice_key": "kanban_musume_051",
+        "caption": ""
+    },
+    {
+        "id": 21446,
+        "voice_key": "kanban_musume_021",
+        "caption": ""
+    },
+    {
+        "id": 21447,
+        "voice_key": "kanban_musume_013",
+        "caption": ""
+    },
+    {
+        "id": 21448,
+        "voice_key": "kanban_musume_030",
+        "caption": ""
+    },
+    {
+        "id": 21449,
+        "voice_key": "kanban_musume_031",
+        "caption": ""
+    },
+    {
+        "id": 21450,
+        "voice_key": "kanban_musume_003",
+        "caption": ""
+    },
+    {
+        "id": 21451,
+        "voice_key": "kanban_musume_032",
+        "caption": ""
+    },
+    {
+        "id": 21452,
+        "voice_key": "kanban_musume_049",
+        "caption": ""
+    },
+    {
+        "id": 21453,
+        "voice_key": "kanban_musume_008",
+        "caption": ""
+    },
+    {
+        "id": 21454,
+        "voice_key": "kanban_musume_024",
+        "caption": ""
+    },
+    {
+        "id": 21455,
+        "voice_key": "kanban_musume_050",
+        "caption": ""
+    },
+    {
+        "id": 21456,
+        "voice_key": "kanban_musume_011",
+        "caption": ""
+    },
+    {
+        "id": 21457,
+        "voice_key": "kanban_musume_007",
+        "caption": ""
+    },
+    {
+        "id": 21458,
+        "voice_key": "kanban_musume_018",
+        "caption": ""
+    },
+    {
+        "id": 21459,
+        "voice_key": "kanban_musume_055",
+        "caption": ""
+    },
+    {
+        "id": 21460,
+        "voice_key": "kanban_musume_012",
+        "caption": ""
+    },
+    {
+        "id": 21461,
+        "voice_key": "kanban_musume_009",
+        "caption": ""
+    },
+    {
+        "id": 21462,
+        "voice_key": "kanban_musume_052",
+        "caption": ""
+    },
+    {
+        "id": 21463,
+        "voice_key": "kanban_musume_029",
+        "caption": ""
+    },
+    {
+        "id": 21464,
+        "voice_key": "kanban_musume_006",
+        "caption": ""
+    },
+    {
+        "id": 21465,
+        "voice_key": "kanban_musume_054",
+        "caption": ""
+    },
+    {
+        "id": 21466,
+        "voice_key": "kanban_musume_020",
+        "caption": ""
+    },
+    {
+        "id": 21467,
+        "voice_key": "kanban_musume_036",
+        "caption": ""
+    },
+    {
+        "id": 21468,
+        "voice_key": "kanban_musume_023",
+        "caption": ""
+    },
+    {
+        "id": 21469,
+        "voice_key": "kanban_musume_056",
+        "caption": ""
+    },
+    {
+        "id": 21470,
+        "voice_key": "kanban_musume_025",
+        "caption": ""
+    },
+    {
+        "id": 21471,
+        "voice_key": "kanban_musume_034",
+        "caption": ""
+    },
+    {
+        "id": 21472,
+        "voice_key": "kanban_musume_010",
+        "caption": ""
+    },
+    {
+        "id": 21473,
+        "voice_key": "kanban_musume_022",
+        "caption": ""
+    },
+    {
+        "id": 21474,
+        "voice_key": "kanban_musume_053",
+        "caption": ""
+    },
+    {
+        "id": 21475,
+        "voice_key": "kanban_musume_037",
+        "caption": ""
+    },
+    {
+        "id": 21476,
+        "voice_key": "kanban_musume_014",
+        "caption": ""
+    },
+    {
+        "id": 21477,
+        "voice_key": "kanban_musume_028",
+        "caption": ""
+    },
+    {
+        "id": 21478,
+        "voice_key": "kanban_musume_051",
+        "caption": ""
+    },
+    {
+        "id": 21479,
+        "voice_key": "kanban_musume_021",
+        "caption": ""
+    },
+    {
+        "id": 21480,
+        "voice_key": "kanban_musume_013",
+        "caption": ""
+    },
+    {
+        "id": 21481,
+        "voice_key": "kanban_musume_030",
+        "caption": ""
+    },
+    {
+        "id": 21482,
+        "voice_key": "kanban_musume_031",
+        "caption": ""
+    },
+    {
         "id": 30601,
         "voice_key": "",
         "caption": ""
@@ -1962,12 +2782,12 @@
     {
         "id": 40611,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander! Sis hasn't come around today, has she? Yay, I'm finally free!"
     },
     {
         "id": 40612,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander! Sis hasn't come around today, has she? Yay, I'm finally free!"
     },
     {
         "id": 40613,
@@ -2207,17 +3027,17 @@
     {
         "id": 55606,
         "voice_key": "WIN",
-        "caption": ""
+        "caption": "Mission complete! Hehe, how will you reward me, Commander?"
     },
     {
         "id": 55607,
         "voice_key": "OPERATIONBEGIN",
-        "caption": ""
+        "caption": "Alright! Onward to a new world!"
     },
     {
         "id": 55608,
         "voice_key": "LOADING",
-        "caption": ""
+        "caption": "Give me a bit, I'll be done soon!"
     },
     {
         "id": 55609,
@@ -2237,7 +3057,7 @@
     {
         "id": 55612,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 55613,
@@ -2247,27 +3067,27 @@
     {
         "id": 55614,
         "voice_key": "BREAK",
-        "caption": ""
+        "caption": "W-what todo now? Don't look, Commander!"
     },
     {
         "id": 55615,
         "voice_key": "RETREAT",
-        "caption": ""
+        "caption": "Ah... Sorry, Commander, we'll be returning immediately..."
     },
     {
         "id": 55616,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "You'll listen to me, right?"
     },
     {
         "id": 55617,
         "voice_key": "FIX",
-        "caption": ""
+        "caption": "Commander... Could I...lean on your shoulder for a bit?"
     },
     {
         "id": 55618,
         "voice_key": "OPERATIONOVER",
-        "caption": ""
+        "caption": "Huh? Where are the snacks I was promised?"
     },
     {
         "id": 55619,
@@ -2277,7 +3097,7 @@
     {
         "id": 55620,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 56001,
@@ -2617,7 +3437,7 @@
     {
         "id": 58408,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "Let me tell you."
     },
     {
         "id": 58409,
@@ -2652,7 +3472,7 @@
     {
         "id": 58415,
         "voice_key": "RETREAT",
-        "caption": ""
+        "caption": "This... isn't too common..."
     },
     {
         "id": 58416,
@@ -2942,12 +3762,12 @@
     {
         "id": 80311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Welcome back!"
     },
     {
         "id": 80312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Welcome back!"
     },
     {
         "id": 80501,
@@ -3067,7 +3887,7 @@
     {
         "id": 101005,
         "voice_key": "FORMATION",
-        "caption": ""
+        "caption": "I would do anything for my family!"
     },
     {
         "id": 101006,
@@ -3082,7 +3902,7 @@
     {
         "id": 101008,
         "voice_key": "PHRASE",
-        "caption": ""
+        "caption": "Relax, relax—"
     },
     {
         "id": 101009,
@@ -3112,7 +3932,7 @@
     {
         "id": 101014,
         "voice_key": "BREAK",
-        "caption": ""
+        "caption": "Ah... How did things end up like this..."
     },
     {
         "id": 101015,
@@ -3122,17 +3942,17 @@
     {
         "id": 101016,
         "voice_key": "GOATTACK",
-        "caption": ""
+        "caption": "For the sake of my family... I won't let anything stand in my way!"
     },
     {
         "id": 101017,
         "voice_key": "MEET",
-        "caption": ""
+        "caption": "I can handle it!"
     },
     {
         "id": 101018,
         "voice_key": "DEFENSE",
-        "caption": ""
+        "caption": "Everyone... Cover me!"
     },
     {
         "id": 101019,
@@ -3507,12 +4327,12 @@
     {
         "id": 120111,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "...You're too slow!"
     },
     {
         "id": 120112,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "...You're too slow!"
     },
     {
         "id": 120201,
@@ -3942,12 +4762,12 @@
     {
         "id": 140211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here, Commander! What's on the agenda today?"
     },
     {
         "id": 140212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here, Commander! What's on the agenda today?"
     },
     {
         "id": 140213,
@@ -4012,12 +4832,12 @@
     {
         "id": 140311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hello, Commander, allow me to give you the files... eh? Where'd I put them?"
     },
     {
         "id": 140312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hello, Commander, allow me to give you the files... eh? Where'd I put them?"
     },
     {
         "id": 140313,
@@ -4082,12 +4902,12 @@
     {
         "id": 140511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, is the meeting today ready?"
     },
     {
         "id": 140512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, is the meeting today ready?"
     },
     {
         "id": 140513,
@@ -4352,12 +5172,12 @@
     {
         "id": 150511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, I knew you'd show up at a time like this."
     },
     {
         "id": 150512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, I knew you'd show up at a time like this."
     },
     {
         "id": 160101,
@@ -4687,12 +5507,12 @@
     {
         "id": 180611,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hello, Commander. I've been waiting here for some time."
     },
     {
         "id": 180612,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hello, Commander. I've been waiting here for some time."
     },
     {
         "id": 180613,
@@ -4962,12 +5782,12 @@
     {
         "id": 190411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Guten tag. Will you be beginning today's work, Master? Please remember to eat in a timeline manner and remain well."
     },
     {
         "id": 190412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Guten tag. Will you be beginning today's work, Master? Please remember to eat in a timeline manner and remain well."
     },
     {
         "id": 190413,
@@ -5307,12 +6127,12 @@
     {
         "id": 210412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Issue me my orders as soon as possible. There's no shortage of missions to complete today, right?"
     },
     {
         "id": 210413,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Issue me my orders as soon as possible. There's no shortage of missions to complete today, right?"
     },
     {
         "id": 210601,
@@ -5367,12 +6187,12 @@
     {
         "id": 210611,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 210612,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 210701,
@@ -5487,12 +6307,12 @@
     {
         "id": 220111,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You look well, Commander. I won't fall behind, either!"
     },
     {
         "id": 220112,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You look well, Commander. I won't fall behind, either!"
     },
     {
         "id": 220201,
@@ -5547,12 +6367,12 @@
     {
         "id": 220211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The Commander just got here? Work's already done."
     },
     {
         "id": 220212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The Commander just got here? Work's already done."
     },
     {
         "id": 220301,
@@ -5587,7 +6407,7 @@
     {
         "id": 220307,
         "voice_key": "SKILL1",
-        "caption": ""
+        "caption": "Wanna play with me?"
     },
     {
         "id": 220308,
@@ -5707,12 +6527,12 @@
     {
         "id": 220511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "About time."
     },
     {
         "id": 220512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "About time."
     },
     {
         "id": 230101,
@@ -5867,12 +6687,12 @@
     {
         "id": 230211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The early bird gets the worm. Let's get started with today's work."
     },
     {
         "id": 230212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The early bird gets the worm. Let's get started with today's work."
     },
     {
         "id": 230301,
@@ -6152,12 +6972,12 @@
     {
         "id": 240311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hey, you're finally here. I just arrived too."
     },
     {
         "id": 240312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Hey, you're finally here. I just arrived too."
     },
     {
         "id": 240401,
@@ -6227,7 +7047,7 @@
     {
         "id": 240502,
         "voice_key": "DIALOGUE1",
-        "caption": "\"Geniuses\" also exist among T-Dolls. I will show you when I get the chance."
+        "caption": "Geniuses also exist among T-Dolls. I will show you when I get the chance."
     },
     {
         "id": 240503,
@@ -6252,7 +7072,7 @@
     {
         "id": 240507,
         "voice_key": "DIALOGUE1",
-        "caption": "\"Geniuses\" also exist among T-Dolls. I will show you when I get the chance."
+        "caption": "Geniuses also exist among T-Dolls. I will show you when I get the chance."
     },
     {
         "id": 240508,
@@ -6272,12 +7092,12 @@
     {
         "id": 240511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "What is it? Do you need anything form me today?"
     },
     {
         "id": 240512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "What is it? Do you need anything form me today?"
     },
     {
         "id": 240701,
@@ -6332,12 +7152,12 @@
     {
         "id": 240711,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Guten tag. Will you be beginning today's work, Master? Please remember to eat in a timeline manner and remain well."
     },
     {
         "id": 240712,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Guten tag. Will you be beginning today's work, Master? Please remember to eat in a timeline manner and remain well."
     },
     {
         "id": 260101,
@@ -6492,12 +7312,12 @@
     {
         "id": 260211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, give me a new mission."
     },
     {
         "id": 260212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, give me a new mission."
     },
     {
         "id": 260215,
@@ -6562,12 +7382,12 @@
     {
         "id": 260311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Anything new and interesting today, Commander?"
     },
     {
         "id": 260312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Anything new and interesting today, Commander?"
     },
     {
         "id": 260315,
@@ -6732,7 +7552,7 @@
     {
         "id": 280204,
         "voice_key": "DIALOGUE3",
-        "caption": "\"I-I'm not blushing! Don't get the wrong idea!\" ...Hehe, is that what they call tsundere?"
+        "caption": "I-I'm not blushing! Don't get the wrong idea! ...Hehe, is that what they call tsundere?"
     },
     {
         "id": 280205,
@@ -6757,7 +7577,7 @@
     {
         "id": 280209,
         "voice_key": "DIALOGUE3",
-        "caption": "\"I-I'm not blushing! Don't get the wrong idea!\" ...Hehe, is that what they call tsundere?"
+        "caption": "I-I'm not blushing! Don't get the wrong idea! ...Hehe, is that what they call tsundere?"
     },
     {
         "id": 280210,
@@ -6767,12 +7587,12 @@
     {
         "id": 280211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Let's see what everyone's preparing for."
     },
     {
         "id": 280212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Let's see what everyone's preparing for."
     },
     {
         "id": 280213,
@@ -6937,12 +7757,12 @@
     {
         "id": 290411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The Commander just got here? Work's already done."
     },
     {
         "id": 290412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "The Commander just got here? Work's already done."
     },
     {
         "id": 290413,
@@ -7007,12 +7827,12 @@
     {
         "id": 290511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You look well, Commander. I won't fall behind, either!"
     },
     {
         "id": 290512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You look well, Commander. I won't fall behind, either!"
     },
     {
         "id": 290513,
@@ -7077,7 +7897,7 @@
     {
         "id": 300111,
         "voice_key": "MOOD2",
-        "caption": ""
+        "caption": "Huh!?"
     },
     {
         "id": 300112,
@@ -7117,7 +7937,7 @@
     {
         "id": 300119,
         "voice_key": "MOOD2",
-        "caption": ""
+        "caption": "Huh!?"
     },
     {
         "id": 300120,
@@ -7352,12 +8172,12 @@
     {
         "id": 310511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're finally here, darling! What are we doing today? Anything is fine."
     },
     {
         "id": 310512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're finally here, darling! What are we doing today? Anything is fine."
     },
     {
         "id": 310513,
@@ -7642,12 +8462,12 @@
     {
         "id": 330411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Is it time to get started, Commander?"
     },
     {
         "id": 330412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Is it time to get started, Commander?"
     },
     {
         "id": 340101,
@@ -7802,12 +8622,12 @@
     {
         "id": 340311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, are you going to work? But will you be in time..."
     },
     {
         "id": 340312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, are you going to work? But will you be in time..."
     },
     {
         "id": 340401,
@@ -7862,12 +8682,12 @@
     {
         "id": 340411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 340412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. Please tell me if you have any arrangements today."
     },
     {
         "id": 350101,
@@ -8082,12 +8902,12 @@
     {
         "id": 350311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "About time."
     },
     {
         "id": 350312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "About time."
     },
     {
         "id": 350401,
@@ -8142,12 +8962,12 @@
     {
         "id": 350411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, I'll be leaving all of the files you need here... ah! Not this magazine!"
     },
     {
         "id": 350412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, I'll be leaving all of the files you need here... ah! Not this magazine!"
     },
     {
         "id": 360101,
@@ -8202,12 +9022,12 @@
     {
         "id": 360111,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here, Commander! Shall I use an air flow rate of above or under water today?"
     },
     {
         "id": 360112,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here, Commander! Shall I use an air flow rate of above or under water today?"
     },
     {
         "id": 360201,
@@ -8492,12 +9312,12 @@
     {
         "id": 370311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander! Sis hasn't come around today, has she? Yay, I'm finally free!"
     },
     {
         "id": 370312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander! Sis hasn't come around today, has she? Yay, I'm finally free!"
     },
     {
         "id": 370401,
@@ -8922,12 +9742,12 @@
     {
         "id": 390211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "What are your thoughts on the opinion today? Same as always, I think."
     },
     {
         "id": 390212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "What are your thoughts on the opinion today? Same as always, I think."
     },
     {
         "id": 400101,
@@ -9042,7 +9862,7 @@
     {
         "id": 400302,
         "voice_key": "DIALOGUE1",
-        "caption": "\"Griffin is a nice place.\" I can say it a few more times if that's what you want, but frankly speaking, I don't see a bright future in this line of work."
+        "caption": "Griffin is a nice place. I can say it a few more times if that's what you want, but frankly speaking, I don't see a bright future in this line of work."
     },
     {
         "id": 400303,
@@ -9067,7 +9887,7 @@
     {
         "id": 400307,
         "voice_key": "DIALOGUE1",
-        "caption": "\"Griffin is a nice place.\" I can say it a few more times if that's what you want, but frankly speaking, I don't see a bright future in this line of work."
+        "caption": "Griffin is a nice place. I can say it a few more times if that's what you want, but frankly speaking, I don't see a bright future in this line of work."
     },
     {
         "id": 400308,
@@ -9087,12 +9907,12 @@
     {
         "id": 400311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Good morning... hm? It's just a common greeting."
     },
     {
         "id": 400312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Good morning... hm? It's just a common greeting."
     },
     {
         "id": 400313,
@@ -9752,7 +10572,7 @@
     {
         "id": 430409,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Issue me my orders as soon as possible. There's no shortage of missions to complete today, right?"
     },
     {
         "id": 430410,
@@ -9807,7 +10627,7 @@
     {
         "id": 450107,
         "voice_key": "BUILDOVER",
-        "caption": ""
+        "caption": "New friends? This calls for a cup."
     },
     {
         "id": 450108,
@@ -9827,7 +10647,7 @@
     {
         "id": 450111,
         "voice_key": "MOOD2",
-        "caption": ""
+        "caption": "Huh!?"
     },
     {
         "id": 450112,
@@ -9847,17 +10667,17 @@
     {
         "id": 450115,
         "voice_key": "PHRASE",
-        "caption": ""
+        "caption": "Exactly as expected..."
     },
     {
         "id": 450116,
         "voice_key": "WIN",
-        "caption": ""
+        "caption": "I enjoy overwhelming victories and grand celebrations. I can handle the first item there, Commander."
     },
     {
         "id": 450117,
         "voice_key": "SKILL3",
-        "caption": ""
+        "caption": "Oh? Another challenge remains?"
     },
     {
         "id": 450118,
@@ -9932,12 +10752,12 @@
     {
         "id": 450411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Good morning, Commander. Please have a look at today's reports."
     },
     {
         "id": 450412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Good morning, Commander. Please have a look at today's reports."
     },
     {
         "id": 450501,
@@ -9992,12 +10812,12 @@
     {
         "id": 450511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Welcome back."
     },
     {
         "id": 450512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Welcome back."
     },
     {
         "id": 450601,
@@ -10052,12 +10872,12 @@
     {
         "id": 450611,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, you're back! Come and have a dirnk!"
     },
     {
         "id": 450612,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Oh, you're back! Come and have a dirnk!"
     },
     {
         "id": 450701,
@@ -10172,12 +10992,12 @@
     {
         "id": 450811,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "I've not yet received directives for today, Commander. I can move at any time."
     },
     {
         "id": 450812,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "I've not yet received directives for today, Commander. I can move at any time."
     },
     {
         "id": 451001,
@@ -10492,12 +11312,12 @@
     {
         "id": 470211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "If we dally any more, we'll have to do overtime. Please keep this in mind, Commander."
     },
     {
         "id": 470212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "If we dally any more, we'll have to do overtime. Please keep this in mind, Commander."
     },
     {
         "id": 470213,
@@ -10662,12 +11482,12 @@
     {
         "id": 470411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You finally made it back. I've been waiting for a while."
     },
     {
         "id": 470412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You finally made it back. I've been waiting for a while."
     },
     {
         "id": 480101,
@@ -10887,12 +11707,12 @@
     {
         "id": 480411,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Don't make me feel that you're too boring."
     },
     {
         "id": 480412,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Don't make me feel that you're too boring."
     },
     {
         "id": 490101,
@@ -11007,12 +11827,12 @@
     {
         "id": 490211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "We meet again, Commander. When will the order to go into combat be issued. I've been looking forward to it."
     },
     {
         "id": 490212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "We meet again, Commander. When will the order to go into combat be issued. I've been looking forward to it."
     },
     {
         "id": 490301,
@@ -11067,12 +11887,12 @@
     {
         "id": 490311,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. I'll be doing everything I can for you today as well."
     },
     {
         "id": 490312,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Morning, Commander. I'll be doing everything I can for you today as well."
     },
     {
         "id": 490401,
@@ -11112,7 +11932,7 @@
     {
         "id": 490408,
         "voice_key": "OPERATIONBEGIN",
-        "caption": ""
+        "caption": "The outlook today's pretty good. I'm sure there'll be something nice."
     },
     {
         "id": 490409,
@@ -11157,12 +11977,12 @@
     {
         "id": 490417,
         "voice_key": "BLACKACTION",
-        "caption": ""
+        "caption": "Don't worry, Commander! My luck in combat has always been good."
     },
     {
         "id": 490418,
         "voice_key": "OPERATIONOVER",
-        "caption": ""
+        "caption": "Looks like my luck this time was good."
     },
     {
         "id": 490419,
@@ -11232,12 +12052,12 @@
     {
         "id": 490511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, I'll be... in your care today, too. I, Sakura, will do my best..."
     },
     {
         "id": 490512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, I'll be... in your care today, too. I, Sakura, will do my best..."
     },
     {
         "id": 490601,
@@ -11292,12 +12112,72 @@
     {
         "id": 490611,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Good morning, nice weather we're having today."
     },
     {
         "id": 490612,
         "voice_key": "HELLO",
+        "caption": "Good morning, nice weather we're having today."
+    },
+    {
+        "id": 505501,
+        "voice_key": "",
         "caption": ""
+    },
+    {
+        "id": 505502,
+        "voice_key": "DIALOGUE1",
+        "caption": "You say my eyes have grown sharper than before... The model of my eyes should still be the same. The reason why you feel that way is probably because I'm looking you in the eyes more often now."
+    },
+    {
+        "id": 505503,
+        "voice_key": "DIALOGUE2",
+        "caption": "Squad DEFY isn't anything special. We're just Dolls with a few advantages... What matters is how we're used, not what we are."
+    },
+    {
+        "id": 505504,
+        "voice_key": "DIALOGUE3",
+        "caption": "...I know 12 isn't here now, but I still have to finish my work, as well as hers."
+    },
+    {
+        "id": 505505,
+        "voice_key": "DIALOGUEWEDDING",
+        "caption": "I should be laughing now, right? I know, you've told me this joke several times before. No, I don't mind. A nice, boring day is a luxury for me... So tell it again, Commander."
+    },
+    {
+        "id": 505506,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 505507,
+        "voice_key": "DIALOGUE1",
+        "caption": "You say my eyes have grown sharper than before... The model of my eyes should still be the same. The reason why you feel that way is probably because I'm looking you in the eyes more often now."
+    },
+    {
+        "id": 505508,
+        "voice_key": "DIALOGUE2",
+        "caption": "Squad DEFY isn't anything special. We're just Dolls with a few advantages... What matters is how we're used, not what we are."
+    },
+    {
+        "id": 505509,
+        "voice_key": "DIALOGUE3",
+        "caption": "...I know 12 isn't here now, but I still have to finish my work, as well as hers."
+    },
+    {
+        "id": 505510,
+        "voice_key": "DIALOGUEWEDDING",
+        "caption": "I should be laughing now, right? I know, you've told me this joke several times before. No, I don't mind. A nice, boring day is a luxury for me... So tell it again, Commander."
+    },
+    {
+        "id": 505511,
+        "voice_key": "HELLO",
+        "caption": "Sorry to keep you waiting, Commander. Ready to carry out your orders at any time."
+    },
+    {
+        "id": 505512,
+        "voice_key": "HELLO",
+        "caption": "Sorry to keep you waiting, Commander. Ready to carry out your orders at any time."
     },
     {
         "id": 505701,
@@ -11377,7 +12257,7 @@
     {
         "id": 507604,
         "voice_key": "DIALOGUE3",
-        "caption": "\"DEFY\" huh... The team still exists, of course. It's just that things have changed too much... Well, nothing will always remain the same."
+        "caption": "DEFY huh... The team still exists, of course. It's just that things have changed too much... Well, nothing will always remain the same."
     },
     {
         "id": 507605,
@@ -11402,7 +12282,7 @@
     {
         "id": 507609,
         "voice_key": "DIALOGUE3",
-        "caption": "\"DEFY\" huh... The team still exists, of course. It's just that things have changed too much... Well, nothing will always remain the same."
+        "caption": "DEFY huh... The team still exists, of course. It's just that things have changed too much... Well, nothing will always remain the same."
     },
     {
         "id": 507610,
@@ -11537,7 +12417,7 @@
     {
         "id": 510204,
         "voice_key": "DIALOGUE3",
-        "caption": "\"Survival for the fittest\" applies to both humans and T-Dolls, right? So both you and I have to do better, Commander."
+        "caption": "Survival for the fittest applies to both humans and T-Dolls, right? So both you and I have to do better, Commander."
     },
     {
         "id": 510205,
@@ -11562,7 +12442,7 @@
     {
         "id": 510209,
         "voice_key": "DIALOGUE3",
-        "caption": "\"Survival for the fittest\" applies to both humans and T-Dolls, right? So both you and I have to do better, Commander."
+        "caption": "Survival for the fittest applies to both humans and T-Dolls, right? So both you and I have to do better, Commander."
     },
     {
         "id": 510210,
@@ -11572,22 +12452,22 @@
     {
         "id": 510211,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here early, Commander."
     },
     {
         "id": 510212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You're here early, Commander."
     },
     {
         "id": 510213,
         "voice_key": "ALLHALLOWS",
-        "caption": ""
+        "caption": "Ah! It's you, Commander... I got spooked several times on the way here. Let me rest a little..."
     },
     {
         "id": 510214,
         "voice_key": "ALLHALLOWS",
-        "caption": ""
+        "caption": "Ah! It's you, Commander... I got spooked several times on the way here. Let me rest a little..."
     },
     {
         "id": 520101,
@@ -11962,12 +12842,12 @@
     {
         "id": 530511,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Finest tidings to you, Commander!"
     },
     {
         "id": 530512,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Finest tidings to you, Commander!"
     },
     {
         "id": 530513,
@@ -12012,7 +12892,7 @@
     {
         "id": 530807,
         "voice_key": "CHRISTMAS",
-        "caption": ""
+        "caption": "Merry Christmas! Commander, would you like to take part in our sales promotion? You might be able to win a special Christmas present, you know."
     },
     {
         "id": 530808,
@@ -12452,7 +13332,7 @@
     {
         "id": 560204,
         "voice_key": "TANABATA",
-        "caption": ""
+        "caption": "Let me help with the event tonight. Remember to treat me to a drink later."
     },
     {
         "id": 560205,
@@ -12467,7 +13347,7 @@
     {
         "id": 560207,
         "voice_key": "ALLHALLOWS",
-        "caption": ""
+        "caption": "How about a dance with me tonight? Oh, your face is getting red."
     },
     {
         "id": 560208,
@@ -12477,7 +13357,7 @@
     {
         "id": 560209,
         "voice_key": "VALENTINE",
-        "caption": ""
+        "caption": "A bottle of wine on this rare occasion? Oh? Could you already have arrangements made? Hehe..."
     },
     {
         "id": 560210,
@@ -12522,7 +13402,7 @@
     {
         "id": 560218,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "Things will get troublesome if we don't do this here."
     },
     {
         "id": 560219,
@@ -12737,7 +13617,7 @@
     {
         "id": 570206,
         "voice_key": "OPERATIONBEGIN",
-        "caption": ""
+        "caption": "The old place again? I'm leaving, then."
     },
     {
         "id": 570207,
@@ -12792,7 +13672,7 @@
     {
         "id": 570217,
         "voice_key": "LOADING",
-        "caption": ""
+        "caption": "C-Commander!? What are you doing? I-I got scared..."
     },
     {
         "id": 570218,
@@ -13392,12 +14272,12 @@
     {
         "id": 630205,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "Unspoken rules are part of the game, too."
     },
     {
         "id": 630206,
         "voice_key": "BUILDOVER",
-        "caption": ""
+        "caption": "A newbie's here? Let's go see them together!"
     },
     {
         "id": 630207,
@@ -13407,7 +14287,7 @@
     {
         "id": 630208,
         "voice_key": "OPERATIONBEGIN",
-        "caption": ""
+        "caption": "Hehe, what new things will I find this time?"
     },
     {
         "id": 630209,
@@ -13427,7 +14307,7 @@
     {
         "id": 630212,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You finally made it back. I've been waiting for a while."
     },
     {
         "id": 630213,
@@ -13437,12 +14317,12 @@
     {
         "id": 630214,
         "voice_key": "BREAK",
-        "caption": ""
+        "caption": "Alright, time to see how things really are!"
     },
     {
         "id": 630215,
         "voice_key": "RETREAT",
-        "caption": ""
+        "caption": "You go first, I'll cover the tail end."
     },
     {
         "id": 630216,
@@ -13452,12 +14332,12 @@
     {
         "id": 630217,
         "voice_key": "OPERATIONOVER",
-        "caption": ""
+        "caption": "I'm back. Do you like this souvenir?"
     },
     {
         "id": 630218,
         "voice_key": "FIX",
-        "caption": ""
+        "caption": "Don't worry, it doesn't hurt... Let me nap, talk to you later."
     },
     {
         "id": 630219,
@@ -13467,7 +14347,7 @@
     {
         "id": 630220,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "You finally made it back. I've been waiting for a while."
     },
     {
         "id": 640101,
@@ -13882,7 +14762,7 @@
     {
         "id": 670117,
         "voice_key": "BLACKACTION",
-        "caption": ""
+        "caption": "It's just orders."
     },
     {
         "id": 670118,
@@ -14187,7 +15067,7 @@
     {
         "id": 710116,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "A good question. Let me tell you the answer."
     },
     {
         "id": 710117,
@@ -14347,7 +15227,7 @@
     {
         "id": 720205,
         "voice_key": "DIALOGUE1",
-        "caption": "\"How bright on the blue is a kite when it's new\" ...Commander, naptime is over, are you ready to play, I mean, work with me?"
+        "caption": "How bright on the blue is a kite when it's new ...Commander, naptime is over, are you ready to play, I mean, work with me?"
     },
     {
         "id": 720206,
@@ -15582,7 +16462,7 @@
     {
         "id": 830105,
         "voice_key": "PHRASE",
-        "caption": ""
+        "caption": "Please leave it to me."
     },
     {
         "id": 830106,
@@ -15592,7 +16472,7 @@
     {
         "id": 830107,
         "voice_key": "BLACKACTION",
-        "caption": ""
+        "caption": "We need to do these things every now and then. With that being the case, just sit back and watch."
     },
     {
         "id": 830108,
@@ -15632,7 +16512,7 @@
     {
         "id": 830115,
         "voice_key": "OPERATIONOVER",
-        "caption": ""
+        "caption": "Are you happy with our supply haul?"
     },
     {
         "id": 830116,
@@ -15642,7 +16522,7 @@
     {
         "id": 830117,
         "voice_key": "BLACKACTION",
-        "caption": ""
+        "caption": "We need to do these things every now and then. With that being the case, just sit back and watch."
     },
     {
         "id": 830118,
@@ -16197,32 +17077,32 @@
     {
         "id": 880103,
         "voice_key": "FEED",
-        "caption": ""
+        "caption": "Strength isn't my only notable field."
     },
     {
         "id": 880104,
         "voice_key": "SKILL3",
-        "caption": ""
+        "caption": "Scared, are you?"
     },
     {
         "id": 880105,
         "voice_key": "BREAK",
-        "caption": ""
+        "caption": "Heh, resistance? Come on, then!"
     },
     {
         "id": 880106,
         "voice_key": "COMBINE",
-        "caption": ""
+        "caption": "That look makes me satisfied."
     },
     {
         "id": 880107,
         "voice_key": "DEFENSE",
-        "caption": ""
+        "caption": "Some bait might be necessary."
     },
     {
         "id": 880108,
         "voice_key": "ALLHALLOWS",
-        "caption": ""
+        "caption": "Little devils, you'd best run now. My nest is ghastlier than even hell itself, hehe..."
     },
     {
         "id": 880109,
@@ -16247,7 +17127,7 @@
     {
         "id": 880113,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "Commander, are you decided on what today's prey will be?"
     },
     {
         "id": 880114,
@@ -16257,17 +17137,17 @@
     {
         "id": 880115,
         "voice_key": "ALLHALLOWS",
-        "caption": ""
+        "caption": "Little devils, you'd best run now. My nest is ghastlier than even hell itself, hehe..."
     },
     {
         "id": 880116,
         "voice_key": "FIX",
-        "caption": ""
+        "caption": "These scent of prey lingers in my wounds still, heh..."
     },
     {
         "id": 880117,
         "voice_key": "PHRASE",
-        "caption": ""
+        "caption": "You're not getting away, heheh..."
     },
     {
         "id": 880118,
@@ -16282,7 +17162,7 @@
     {
         "id": 880120,
         "voice_key": "RETREAT",
-        "caption": ""
+        "caption": "I won't let you off for this... Remember this well."
     },
     {
         "id": 880121,
@@ -16395,6 +17275,56 @@
         "caption": ""
     },
     {
+        "id": 999901,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999902,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999903,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999904,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999910,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999911,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999912,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999913,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999914,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 999915,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
         "id": 1000401,
         "voice_key": "",
         "caption": ""
@@ -16417,7 +17347,7 @@
     {
         "id": 1000405,
         "voice_key": "TIP",
-        "caption": ""
+        "caption": "A good question. Let me tell you the answer."
     },
     {
         "id": 1000406,
@@ -16457,7 +17387,7 @@
     {
         "id": 1000413,
         "voice_key": "LOADING",
-        "caption": ""
+        "caption": "Good morning, let's confirm our schedule today first."
     },
     {
         "id": 1000414,
@@ -16502,7 +17432,7 @@
     {
         "id": 1000422,
         "voice_key": "LOADING",
-        "caption": ""
+        "caption": "Good morning, let's confirm our schedule today first."
     },
     {
         "id": 1000423,
@@ -16977,7 +17907,7 @@
     {
         "id": 1050108,
         "voice_key": "WIN",
-        "caption": ""
+        "caption": "Perfect... both my desires and your goals satisfied."
     },
     {
         "id": 1050109,
@@ -17007,17 +17937,17 @@
     {
         "id": 1050114,
         "voice_key": "SKILL3",
-        "caption": ""
+        "caption": "I'm tired of this."
     },
     {
         "id": 1050115,
         "voice_key": "WIN",
-        "caption": ""
+        "caption": "Perfect... both my desires and your goals satisfied."
     },
     {
         "id": 1050116,
         "voice_key": "LOADING",
-        "caption": ""
+        "caption": "You're so mean, Commander~"
     },
     {
         "id": 1050117,
@@ -17167,7 +18097,7 @@
     {
         "id": 1070306,
         "voice_key": "FORMATION",
-        "caption": ""
+        "caption": "Which gang will our opponents be from this time?"
     },
     {
         "id": 1070307,
@@ -17177,7 +18107,7 @@
     {
         "id": 1070308,
         "voice_key": "GOATTACK",
-        "caption": ""
+        "caption": "Let's make this a good one!"
     },
     {
         "id": 1070309,
@@ -17222,12 +18152,12 @@
     {
         "id": 1070317,
         "voice_key": "SKILL2",
-        "caption": ""
+        "caption": "Don't leave any alive! Equal treatment here."
     },
     {
         "id": 1070318,
         "voice_key": "WIN",
-        "caption": ""
+        "caption": "This thrill... it's almost too much."
     },
     {
         "id": 1070319,
@@ -17357,7 +18287,7 @@
     {
         "id": 1090604,
         "voice_key": "FORMATION",
-        "caption": ""
+        "caption": "AR15 will deliver victory!"
     },
     {
         "id": 1090605,
@@ -17367,17 +18297,17 @@
     {
         "id": 1090606,
         "voice_key": "DEFENSE",
-        "caption": ""
+        "caption": "Stop. Re-simulate operation plan."
     },
     {
         "id": 1090607,
         "voice_key": "SKILL3",
-        "caption": ""
+        "caption": "I'll be the one... to deliver the final blow!"
     },
     {
         "id": 1090608,
         "voice_key": "FEED",
-        "caption": ""
+        "caption": "Is this the power I've been looking for?"
     },
     {
         "id": 1090609,
@@ -17387,7 +18317,7 @@
     {
         "id": 1090610,
         "voice_key": "BLACKACTION",
-        "caption": ""
+        "caption": "Has my chance finally come?"
     },
     {
         "id": 1090611,
@@ -17407,12 +18337,12 @@
     {
         "id": 1090614,
         "voice_key": "FEED",
-        "caption": ""
+        "caption": "Is this the power I've been looking for?"
     },
     {
         "id": 1090615,
         "voice_key": "FIX",
-        "caption": ""
+        "caption": "I'll never, never forgive them!"
     },
     {
         "id": 1090616,
@@ -17422,17 +18352,17 @@
     {
         "id": 1090617,
         "voice_key": "COMBINE",
-        "caption": ""
+        "caption": "The number of dummies is irrelevant. They all act according ot my will anyway."
     },
     {
         "id": 1090618,
         "voice_key": "DEFENSE",
-        "caption": ""
+        "caption": "Stop. Re-simulate operation plan."
     },
     {
         "id": 1090619,
         "voice_key": "HELLO",
-        "caption": ""
+        "caption": "I've not yet received directives for today, Commander. I can move at any time."
     },
     {
         "id": 1090620,
@@ -18051,6 +18981,211 @@
     },
     {
         "id": 1150120,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160301,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160302,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160303,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160304,
+        "voice_key": "FORMATION",
+        "caption": "E-excuse me, please make room..."
+    },
+    {
+        "id": 1160305,
+        "voice_key": "ATTACK",
+        "caption": "Orders have come down from on top! This must be a good chance, now charge!"
+    },
+    {
+        "id": 1160306,
+        "voice_key": "BLACKACTION",
+        "caption": "You'll let me decide? Th-then we'll go with this..."
+    },
+    {
+        "id": 1160307,
+        "voice_key": "BUILDOVER",
+        "caption": "Commander, we have a new arrival, want to go take a look?"
+    },
+    {
+        "id": 1160308,
+        "voice_key": "WIN",
+        "caption": "Did...did we win?"
+    },
+    {
+        "id": 1160309,
+        "voice_key": "DIALOGUEWEDDING",
+        "caption": "Commander, please let me know if there's something you'd like to eat. I've been learning how to cook recently, so maybe I might get a chance to practice... Hm? Anything will do?"
+    },
+    {
+        "id": 1160310,
+        "voice_key": "HELLO",
+        "caption": "Hello, Commander... Should I begin patrolling the campgrounds now?"
+    },
+    {
+        "id": 1160311,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160312,
+        "voice_key": "SOULCONTRACT",
+        "caption": "I honestly didn't think I'd be able to come this far... Ah, that's not what I mean, I'm saying that I'm very happy! <> Although I'm not too good with words most of the time, I have always viewed you as a role model. <> Commander, it is an honor for me to take the next step as your companion!"
+    },
+    {
+        "id": 1160313,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160314,
+        "voice_key": "MOOD1",
+        "caption": ""
+    },
+    {
+        "id": 1160315,
+        "voice_key": "DIALOGUE2",
+        "caption": "The sky...is so close, yet so far..."
+    },
+    {
+        "id": 1160316,
+        "voice_key": "TIP",
+        "caption": "Commander, um..."
+    },
+    {
+        "id": 1160317,
+        "voice_key": "APPRECIATE",
+        "caption": ""
+    },
+    {
+        "id": 1160318,
+        "voice_key": "WIN",
+        "caption": "Did...did we win?"
+    },
+    {
+        "id": 1160319,
+        "voice_key": "BREAK",
+        "caption": "H-how could this be?"
+    },
+    {
+        "id": 1160320,
+        "voice_key": "MOOD2",
+        "caption": ""
+    },
+    {
+        "id": 1160901,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160902,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160903,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160904,
+        "voice_key": "DIALOGUE1",
+        "caption": "Does this getup look odd? No? That's great. Wearing it fills me with nostalgia."
+    },
+    {
+        "id": 1160905,
+        "voice_key": "GAIN",
+        "caption": "I don't remember what happened, but a fully upgraded Type 88 has returned! With my firepower specialized, I shall provide you with more comprehensive service. I won't lose out on bodyguard duty either!"
+    },
+    {
+        "id": 1160906,
+        "voice_key": "DIALOGUE2",
+        "caption": "I'll pamper your taste buds at the store and ensure your safety when we're out! I had regrets in the past, but they've only made me stronger."
+    },
+    {
+        "id": 1160907,
+        "voice_key": "DIALOGUE3",
+        "caption": "I have calculated how to converse with you many times, Master... But I guess I just can't help but feel flustered around you."
+    },
+    {
+        "id": 1160908,
+        "voice_key": "WIN",
+        "caption": "It seems the customers were very pleased this time round. Let's give them good service next time too!"
+    },
+    {
+        "id": 1160909,
+        "voice_key": "ATTACK",
+        "caption": "Honestly! Don't just walk all over the place!"
+    },
+    {
+        "id": 1160910,
+        "voice_key": "DIALOGUEWEDDING",
+        "caption": "Thank you... No, I'm not just being polite. I can't help but express my gratitude just looking at you, Master."
+    },
+    {
+        "id": 1160911,
+        "voice_key": "LOGIN",
+        "caption": ""
+    },
+    {
+        "id": 1160912,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160913,
+        "voice_key": "SOULCONTRACT",
+        "caption": "So what would you like this time, Master?<>Huhhh? Me...? A-Alright. But make sure you take good care of me...<>Umm... So this time, I'm yours."
+    },
+    {
+        "id": 1160914,
+        "voice_key": "",
+        "caption": ""
+    },
+    {
+        "id": 1160915,
+        "voice_key": "BREAK",
+        "caption": "Ugh! ...Master's going to scold me now!"
+    },
+    {
+        "id": 1160916,
+        "voice_key": "RETREAT",
+        "caption": "Where did I go wrong with my service..."
+    },
+    {
+        "id": 1160917,
+        "voice_key": "FIX",
+        "caption": "I'm terribly sorry... You will have to take care of me this time, Master..."
+    },
+    {
+        "id": 1160918,
+        "voice_key": "LOWMOOD",
+        "caption": ""
+    },
+    {
+        "id": 1160919,
+        "voice_key": "MOOD2",
+        "caption": ""
+    },
+    {
+        "id": 1160920,
+        "voice_key": "DIALOGUE3",
+        "caption": "I have calculated how to converse with you many times, Master... But I guess I just can't help but feel flustered around you."
+    },
+    {
+        "id": 1160921,
         "voice_key": "",
         "caption": ""
     },
