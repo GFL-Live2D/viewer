@@ -10,6 +10,7 @@
         voiceData = undefined,
         normalVoiceData = undefined,
         assetBaseUrl = '/assets',
+        overlayInsets = { left: null, right: null, bottom: null },
         controller = $bindable<Live2DController | undefined>(),
         canvas = $bindable<HTMLCanvasElement | undefined>(),
         isBgMoveMode = false, // Received from parent
@@ -27,18 +28,15 @@
         if (controller && characterEntry && variant) {
             const signature = `${characterEntry.id}-${variant}`;
             if (signature !== lastLoadedSignature) {
-                // console.log('[GunLive2D] Triggering load for signature:', signature);
                 lastLoadedSignature = signature;
                 load();
             }
         }
     });
 
-    // Reactive Viewport & Debug Controls
+    // Background manipulation owns pinch gestures while its move mode is active.
     $effect(() => {
-        if (controller) {
-            controller.setZoom(controller.state.scaleMultiplier);
-        }
+        controller?.setPinchZoomEnabled(!isBgMoveMode);
     });
 
     $effect(() => {
@@ -164,11 +162,11 @@
         if (isBgMoveMode) return; // Allow event to bubble / be handled by window listener
         if (!controller) return;
 
-        // Smooth zoom with spring animation, no limits (UI slider handles its own limits)
+        // Wheel input is already continuous, so apply it directly without spring lag.
         e.preventDefault();
         const delta = e.deltaY < 0 ? 1 : -1;
-        const newZoom = controller.state.scaleMultiplier + delta;
-        controller.setZoom(newZoom);
+        const newZoom = controller.getCurrentZoom() + delta;
+        controller.setZoom(newZoom, { hard: true });
     }
 
     // Public Methods
@@ -192,7 +190,11 @@
 
 <!-- Loading Overlay -->
 {#if controller?.state.loading === ModelLoadingState.LOADING || isInitializing}
-    <CanvasOverlay>
+    <CanvasOverlay
+        leftInset={overlayInsets.left}
+        rightInset={overlayInsets.right}
+        bottomInset={overlayInsets.bottom}
+    >
         <div class="text-center">
             <img src="/gfloading.gif" class="mx-auto mb-4 h-24 w-24" />
             <p class="text-foreground-secondary font-medium">{characterEntry?.code}</p>
@@ -207,7 +209,13 @@
 
 <!-- Error Overlay -->
 {#if controller?.state.loading === ModelLoadingState.ERROR}
-    <CanvasOverlay bg="bg-background" pointerEvents="pointer-events-auto">
+    <CanvasOverlay
+        bg="bg-background"
+        pointerEvents="pointer-events-auto"
+        leftInset={overlayInsets.left}
+        rightInset={overlayInsets.right}
+        bottomInset={overlayInsets.bottom}
+    >
         <div class="max-w-md text-center">
             <h2 class="mb-2 text-2xl font-bold text-red-400">Error</h2>
             <p class="text-foreground-tertiary mb-6 text-sm">{controller.state.error}</p>

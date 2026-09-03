@@ -95,7 +95,7 @@
                         }
                     }}
                 >
-                    <div class="flex items-center justify-center gap-2 group-data-[state=on]:text-white">
+                    <div class="flex items-center justify-center gap-2 group-data-[state=on]:text-foreground">
                         <Activity class="shrink-0 group-data-[state=on]:stroke-yellow-500" />
                         <span>Performance monitor</span>
                     </div>

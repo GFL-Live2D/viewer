@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
+import { Graphics } from 'pixi.js';
 // Dynamic import used for Live2DModel to avoid SSR crashes regarding 'document'
-import type { Live2DModel } from 'pixi-live2d-display-advanced';
+import type { Live2DModel } from 'untitled-pixi-live2d-engine';
 import { Spring } from 'svelte/motion';
 import live2dOverrides from '$lib/data/live2d-overrides.json';
 import Stats from 'stats.js';
@@ -40,7 +41,7 @@ interface CharacterEntry {
 }
 
 // --- Extended Types for Library Internals ---
-// Internal structure types for pixi-live2d-display-advanced
+// Internal structure types for untitled-pixi-live2d-engine
 // We need these to access internal properties that are not exposed in the public type definitions
 // or to fix type mismatches where the library uses 'any' or incorrect types.
 interface ExtendedModelSettings {
@@ -98,6 +99,8 @@ export class Live2DController {
     model: Live2DModel | undefined; // Live2DModel
     private canvas: HTMLCanvasElement; // Store canvas reference
     private bgSprite: PIXI.Sprite | null = null; // Background sprite
+    private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
+    private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
     private isCanvasCaptionSuppressed = false;
@@ -138,6 +141,7 @@ export class Live2DController {
         followParameterValues: boolean; // Auto-update parameters from animation
         forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
         renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
+        useCustomInitialPositioning: boolean; // Apply CanvasOrigin centering and live2d-overrides.json nudges on load
     }>({
         loading: ModelLoadingState.IDLE,
         loadingStep: null,
@@ -161,6 +165,7 @@ export class Live2DController {
         followParameterValues: false,
         forceLipSync: false,
         renderCaptionsOnCanvas: false,
+        useCustomInitialPositioning: true,
     });
 
     // Data Cache
@@ -187,6 +192,7 @@ export class Live2DController {
 
     // Gesture management
     private gestureManager: any = null;
+    private pinchZoomEnabled = true;
     private directZoom: number | null = null; // When set, use this zoom value instead of spring (for hard: true updates)
 
     // Load state tracking
@@ -207,11 +213,46 @@ export class Live2DController {
     private audioPromiseCache: Map<string, Promise<string>> = new Map(); // key -> Promise<BlobURL>
     private audioProgressInterval: number | null = null; // For audio-only progress tracking
 
+    // Resolves once `this.app` is initialized. PIXI v8's Application.init() is async,
+    // so anything touching `this.app` must await this first.
+    private initPromise: Promise<void>;
+
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+        this.app = new PIXI.Application();
+
+        // Initialize spring for smooth zoom with exponential scaling
+        this.zoomSpring = new Spring(0, {
+            stiffness: 0.1,
+            damping: 0.8,
+        });
+
+        // Expose PIXI for Live2D plugin
+        (window as any).PIXI = PIXI;
+
+        // Configure Cubism4 before loading any models
+        this.cubism4Promise = this.initializeCubism4();
+
+        // Resize listener
+        window.addEventListener('resize', this.handleResize);
+
+        this.initPromise = this.initPixi();
+    }
+
+    private async initPixi() {
+        // Must register before the renderer is created (app.init below), otherwise the
+        // engine falls back to lazily patching the render pipe on first draw. Imported from
+        // the same /cubism chunk as Live2DModel below, since each entry point bundles its
+        // own copy of these classes and the render pipe's instanceof check needs them to match.
+        const { Live2DPlugin } = await import('untitled-pixi-live2d-engine/cubism');
+        PIXI.extensions.add(Live2DPlugin);
+
+        const { GifSource } = await import('pixi.js/gif');
+        this.GifSource = GifSource;
+
         const dpr = window.devicePixelRatio || 1;
-        this.app = new PIXI.Application({
-            view: canvas,
+        await this.app.init({
+            canvas: this.canvas,
             width: window.innerWidth,
             height: window.innerHeight,
             resolution: dpr * 2,
@@ -220,25 +261,21 @@ export class Live2DController {
             backgroundAlpha: 0,
         });
 
-        // Initialize spring for smooth zoom with exponential scaling
-        this.zoomSpring = new Spring(0, {
-            stiffness: 0.1,
-            damping: 0.8,
-        });
-
         // Auto-start render with spring update loop
         this.startRendering();
 
         // Initialize caption text overlay
-        this.captionText = new PIXI.Text('', {
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 20,
-            fill: 0xffffff,
-            stroke: 0x000000,
-            strokeThickness: 4,
-            align: 'center',
-            wordWrap: true,
-            wordWrapWidth: window.innerWidth * 0.8,
+        this.captionText = new PIXI.Text({
+            text: '',
+            style: {
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: 20,
+                fill: 0xffffff,
+                stroke: { color: 0x000000, width: 4 },
+                align: 'center',
+                wordWrap: true,
+                wordWrapWidth: window.innerWidth * 0.8,
+            },
         });
         this.captionText.anchor.set(0.5, 1);
         this.captionText.visible = false;
@@ -255,28 +292,20 @@ export class Live2DController {
                 stats.update();
             });
         }
-
-        // Expose PIXI for Live2D plugin
-        (window as any).PIXI = PIXI;
-
-        // Configure Cubism4 before loading any models
-        this.cubism4Promise = this.initializeCubism4();
-
-        // Resize listener
-        window.addEventListener('resize', this.handleResize);
     }
 
     private async initializeCubism4() {
         try {
-            const { configureCubism4 } = await import('pixi-live2d-display-advanced/cubism4');
-            configureCubism4({ memorySizeMB: 128 });
-            // console.log('[Controller] Cubism4 configured');
+            const { configureCubismSDK } = await import('untitled-pixi-live2d-engine/cubism');
+            configureCubismSDK({ memorySizeMB: 128 });
         } catch (err) {
             throw err;
         }
     }
 
     private handleResize = () => {
+        if (!this.app.renderer) return;
+
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
 
@@ -341,9 +370,6 @@ export class Live2DController {
 
             // Update motion progress
             if (this.state.isMotionPlaying) {
-                if (!this.motionDuration) {
-                    // console.warn('[Controller] Motion duration unknown, cannot track progress');
-                }
                 const duration = this.motionDuration;
                 const elapsed = Date.now() - this.motionStartTime;
                 const progress = Math.max(0, Math.min(elapsed / (duration * 1000), 1));
@@ -351,7 +377,6 @@ export class Live2DController {
 
                 // Auto-stop if motion duration exceeded
                 if (progress >= 1) {
-                    // console.log('[Controller] Motion finished');
                     this.state.isMotionPlaying = false;
                     this.state.motionProgress = 0;
                 }
@@ -377,6 +402,9 @@ export class Live2DController {
         if (this.state.loading === ModelLoadingState.READY) {
             this.state.loading = ModelLoadingState.IDLE;
         }
+
+        await this.initPromise;
+        if (this.loadId !== myLoadId) return false;
 
         try {
             // Stop any currently playing audio immediately
@@ -432,23 +460,23 @@ export class Live2DController {
             const basePath = `${assetBaseUrl}/models/${dirName}/${variant}`;
             const modelUrl = `${basePath}/${dirName}.model3.json`;
 
-            // console.log(`[Controller] Loading Model URL: ${modelUrl} (LoadID: ${myLoadId})`);
-
             this.state.loadingStep = 'Loading textures';
 
-            const { Live2DModel } = await import('pixi-live2d-display-advanced/cubism4');
+            const { Live2DModel } = await import('untitled-pixi-live2d-engine/cubism');
 
             // Check if superseded
             if (this.loadId !== myLoadId) return false;
 
-            // console.log('[Controller] Live2DModel loaded:', Live2DModel);
-
             // Load model via URL with custom interaction (focus only on left click down)
             let newModel: any;
             try {
-                newModel = await Live2DModel.from(modelUrl, { autoHitTest: false, autoFocus: false });
+                newModel = await Live2DModel.from(modelUrl, {
+                    autoHitTest: false,
+                    autoFocus: false,
+                    lipSyncGain: 1.0,
+                    lipSyncWeight: 0.4,
+                });
             } catch (loadErr: any) {
-                // console.error('[Controller] Failed to load model from URL:', loadErr);
                 throw new Error(`Failed to load Live2D model: ${loadErr.message}`);
             }
 
@@ -511,11 +539,16 @@ export class Live2DController {
             this.state.loadingStep = 'Setting up';
             this.state.motionGroups = [...this.motionGroups]; // Update UI now that metadata is ready
 
-            // Default forceLipSync to true for idle-only models
-            if (this.motionGroups.length === 0 || (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle')) {
-                this.state.forceLipSync = true;
-            }
+            // Default lip sync on for idle-only models, since there's no other motion to drive mouth movement.
+            const isIdleOnly =
+                this.motionGroups.length === 0 || (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
+            this.setForceLipSync(isIdleOnly);
 
+            // cleanupModel() clears the whole stage on every load, so re-attach the background
+            // sprite too (it survives the model swap, only the model/moc-derived state resets).
+            if (this.bgSprite) {
+                this.app.stage.addChildAt(this.bgSprite, 0);
+            }
             this.app.stage.addChild(this.model!);
             // Bring caption text to front (above model)
             if (this.captionText) {
@@ -532,17 +565,12 @@ export class Live2DController {
             this.refreshParametersState();
             this.refreshPartsState();
 
-            // console.log(`[Controller] Loaded ${entry.code} at ${dirName} (LoadID: ${myLoadId})`);
             return true;
         } catch (err: any) {
+            // A superseded load's error is irrelevant, only the current one surfaces to the UI.
             if (this.loadId === myLoadId) {
                 this.state.error = err.message;
                 this.state.loading = ModelLoadingState.ERROR;
-            } else {
-                // console.warn(
-                //     `[Controller] Error from superseded load ${myLoadId}, current load is ${this.loadId}:`,
-                //     err,
-                // );
             }
             return false;
         }
@@ -594,22 +622,6 @@ export class Live2DController {
         }
 
         this.defaultZoom = scale;
-
-        // Debug: Log complete Layout info
-        // try {
-        //     const layout = (settings as any)?.json?.FileReferences?.Layout || (settings as any)?.layout;
-        //     console.log('[Controller] Model3.json Layout Info:', layout);
-        //     console.log('[Controller] Canvas Config:', {
-        //         width: this.app.renderer.width,
-        //         height: this.app.renderer.height,
-        //         modelScale: scale,
-        //         view: (this.app.view as HTMLCanvasElement).style?.width,
-        //     });
-        // } catch (e) {
-        //     console.warn('[Controller] Failed to log layout info', e);
-        // }
-
-        // console.log('[Controller] Default zoom from model3.json Layout.Scale:', this.defaultZoom);
     }
 
     private extractMotionGroupsFromModel() {
@@ -687,11 +699,6 @@ export class Live2DController {
             }
         }
 
-        // console.log(
-        //     '[Controller] Motion durations extracted from loaded motions:',
-        //     Object.keys(this.motionMetadata).length,
-        //     'groups',
-        // );
     }
 
     private async loadMotionData(entry: CharacterEntry, motionData?: any) {
@@ -702,7 +709,7 @@ export class Live2DController {
             throw new Error('Motion data is empty for model ' + entry.id);
         }
 
-        // motionData is already pre-filtered by model ID on the frontend
+        // motionData is already pre-filtered by model ID and variant on the server
         // Structure: { motionId -> MotionData }
         const modelMotions = motionData;
 
@@ -731,8 +738,6 @@ export class Live2DController {
             // Parse group and index from motion data (need to get from model during loading)
         }
 
-        // console.log('[Controller] Loaded motion data:', Object.keys(this.motionMap).length, 'entries');
-        // console.log('[Controller] File -> MotionID map:', Object.keys(this.fileToMotionId).slice(0, 10));
     }
 
     private async loadVoiceData(modelId: string, voiceData?: any, normalVoiceData?: any) {
@@ -740,7 +745,7 @@ export class Live2DController {
             throw new Error('Voice data not provided by server for model ' + modelId);
         }
 
-        // voiceData is already pre-filtered by model ID on the frontend
+        // voiceData is already pre-filtered by model ID and variant on the server
         // Structure: { motionId -> { voice_key, caption } }
         if (typeof voiceData !== 'object') {
             throw new Error('Invalid voice data structure: expected object, got ' + typeof voiceData);
@@ -755,20 +760,34 @@ export class Live2DController {
     private bgTransform = { x: 0, y: 0, scale: 1 };
 
     public async setBackground(url: string | null): Promise<void> {
-        // Cleanup old sprite
+        await this.initPromise;
+
+        // Cleanup old sprite. Its texture is owned by Assets (loaded via Assets.load below),
+        // so release it through Assets.unload rather than destroying the texture directly.
         if (this.bgSprite) {
             this.app.stage.removeChild(this.bgSprite);
-            this.bgSprite.destroy({ children: true, texture: true, baseTexture: true });
+            this.bgSprite.destroy({ children: true });
             this.bgSprite = null;
+        }
+        if (this.bgUrl) {
+            await PIXI.Assets.unload(this.bgUrl).catch(() => {});
+            this.bgUrl = null;
         }
 
         if (!url) return;
 
         try {
-            const texture = await PIXI.Texture.fromURL(url);
+            // Texture.fromURL doesn't exist in Pixi v8; Assets.load is the replacement.
+            const resource = await PIXI.Assets.load(url);
             // Check if superseded or destroyed? (Simplification: assume linear usage for now)
 
-            this.bgSprite = new PIXI.Sprite(texture);
+            // GIFs load as a GifSource, not a Texture, and need GifSprite to animate.
+            const { GifSprite } = await import('pixi.js/gif');
+            this.bgSprite =
+                this.GifSource && resource instanceof this.GifSource
+                    ? new GifSprite({ source: resource })
+                    : new PIXI.Sprite(resource);
+            this.bgUrl = url;
             this.bgSprite.anchor.set(0.5);
             // Apply cached transform immediately
             this.applyBackgroundTransform();
@@ -802,31 +821,11 @@ export class Live2DController {
 
     // -- Repeat Parameters --
 
-    // moc3 "repeat" params should wrap at min/max instead of clamping; the library doesn't apply this.
+    // moc3 "repeat" params should wrap at min/max instead of clamping. The SDK defaults to
+    // overriding that flag off, so we opt in to let moc3-authored repeat parameters wrap.
     private setupRepeatParameters(model: Live2DModel) {
         const coreModel = (model.internalModel as unknown as ExtendedInternalModel).coreModel;
-        const params = coreModel?.parameters;
-        if (!params?.repeats) return;
-
-        const repeatIndices: number[] = [];
-        for (let i = 0; i < params.count; i++) {
-            if (params.repeats[i]) repeatIndices.push(i);
-        }
-        if (repeatIndices.length === 0) return;
-
-        (model.internalModel as unknown as ExtendedInternalModel).on('afterMotionUpdate', () => {
-            for (const i of repeatIndices) {
-                const min = params.minimumValues[i];
-                const max = params.maximumValues[i];
-                const range = max - min;
-                if (range <= 0) continue;
-
-                const value = params.values[i];
-                if (value < min || value > max) {
-                    params.values[i] = ((((value - min) % range) + range) % range) + min;
-                }
-            }
-        });
+        coreModel?.setOverrideFlagForModelParameterRepeat?.(false);
     }
 
     // -- Interaction --
@@ -926,18 +925,17 @@ export class Live2DController {
             interact(canvasElement)
                 .gesturable({})
                 .on('gesturestart', (event: any) => {
-                    if (!this.model || !this.state.isMoveMode) {
+                    if (!this.model || !this.state.isMoveMode || !this.pinchZoomEnabled) {
                         event.preventDefault();
                         return;
                     }
                     // Gesture requires 2+ pointers automatically by interact.js
                     isGestureActive = true;
-                    // Capture current target zoom level (UI state, not actual scale)
-                    // This ensures pinch always starts from consistent baseline
-                    pinchStartScaleMultiplier = this.state.scaleMultiplier;
+                    // Start from the rendered value so interrupting a slider animation cannot jump.
+                    pinchStartScaleMultiplier = this.getCurrentZoom();
                 })
                 .on('gesturemove', (event: any) => {
-                    if (!this.model || !this.state.isMoveMode) return;
+                    if (!this.model || !this.state.isMoveMode || !this.pinchZoomEnabled || !isGestureActive) return;
 
                     // event.scale is the ratio of current distance to start distance
                     const ZOOM_BASE = 1.1;
@@ -952,12 +950,11 @@ export class Live2DController {
                     this.setZoom(targetScaleMultiplier, { hard: true });
                 })
                 .on('gestureend', (event: any) => {
+                    if (!isGestureActive) return;
                     isGestureActive = false;
                     pinchStartScaleMultiplier = 0;
-                    // Clear direct zoom so spring animation takes over on next input
+                    // The hard updates keep the spring synchronised, so releasing never rebounds.
                     this.directZoom = null;
-                    // Update spring target to current state for smooth continuation
-                    this.zoomSpring.target = this.state.scaleMultiplier;
                 });
 
             this.gestureManager = { destroy: () => { } }; // Placeholder for cleanup compatibility
@@ -996,8 +993,6 @@ export class Live2DController {
         if (hitAreas.length === 0) return;
         const model = this.model;
         if (!model) return;
-
-        // console.log('[Controller] Handling tap on hitareas:', hitAreas);
 
         // For idle-only models, play unmapped voicelines on body tap instead of motion
         const isIdleOnly = this.motionGroups.length === 0 ||
@@ -1052,8 +1047,6 @@ export class Live2DController {
             }
         }
 
-        // console.log('[Controller] Selected group:', selectedGroupName);
-
         // Now select motion within the chosen group using weighted random
         const definitions = (model.internalModel.motionManager.definitions as any)[selectedGroupName];
         let selectedIndex = 0;
@@ -1075,8 +1068,6 @@ export class Live2DController {
                 break;
             }
         }
-
-        // console.log('[Controller] Selected motion index:', selectedIndex);
 
         // Update State
         this.state.currentMotionGroup = selectedGroupName;
@@ -1102,7 +1093,7 @@ export class Live2DController {
         }
 
         // Play motion without audio - we'll handle timing manually
-        model.motion(selectedGroupName, selectedIndex).then(() => {
+        model.motion(selectedGroupName, selectedIndex, 2, { loop: false }).then(() => {
             const audioDelay = this.resolveAudioDelay(def?.File);
 
             // If audio URL exists, play it after the delay
@@ -1342,7 +1333,6 @@ export class Live2DController {
 
         const voice = this.voiceMap[motionId] || this.normalVoiceMap[motionId];
         if (!voice || !voice.voice_key) {
-            console.warn('[Controller] No voice data for motion', motionId);
             return;
         }
 
@@ -1577,10 +1567,10 @@ export class Live2DController {
                 await new Promise((resolve) => setTimeout(resolve, audioDelay * 1000));
             }
 
-            await this.model.motion(groupName, motionIndex, 2, { sound: blobUrl, volume: 0.5 });
+            await this.model.motion(groupName, motionIndex, 2, { sound: blobUrl, volume: 0.5, loop: false });
         } else {
             // Without library lip sync, audio isn't tied to the motion call so timing is handled manually below
-            await this.model.motion(groupName, motionIndex);
+            await this.model.motion(groupName, motionIndex, 2, { loop: false });
 
             // Play audio manually with delay if available
             if (audioUrl) {
@@ -1637,16 +1627,32 @@ export class Live2DController {
         await this.playMotionWithAudio(groupName, motionIndex);
     }
 
+    setForceLipSync(enabled: boolean) {
+        this.state.forceLipSync = enabled;
+        if (this.model?.internalModel) {
+            (this.model.internalModel as any).lipSync = enabled;
+        }
+    }
+
     setZoom(multiplier: number, options?: { hard?: boolean }) {
         this.state.scaleMultiplier = multiplier;
         if (options?.hard) {
-            // Skip spring animation: use direct zoom value (instant response)
+            // Direct inputs stay synchronised with the spring so releasing a gesture cannot rebound.
             this.directZoom = multiplier;
+            void this.zoomSpring.set(multiplier, { instant: true });
         } else {
             // Use spring animation for smooth transition
             this.directZoom = null;
             this.zoomSpring.target = multiplier;
         }
+    }
+
+    getCurrentZoom() {
+        return this.directZoom ?? this.zoomSpring.current;
+    }
+
+    setPinchZoomEnabled(enabled: boolean) {
+        this.pinchZoomEnabled = enabled;
     }
 
     resetZoom() {
@@ -1687,27 +1693,87 @@ export class Live2DController {
 
     // -- Hitbox Debug --
 
+    // untitled-pixi-live2d-engine's own HitAreaFrames tool extends Graphics and calls
+    // addChild on itself, which Pixi v8 no longer allows (only Containers may have children).
+    // Draw the same rectangles + labels ourselves, rooted in a real Container instead.
     async toggleHitboxDebug(enable: boolean) {
         const model = this.model;
         if (!model) return;
 
         if (enable && !this.hitAreaFrames) {
-            try {
-                const { HitAreaFrames } = await import('pixi-live2d-display-advanced/extra');
-                this.hitAreaFrames = new HitAreaFrames();
-                model.addChild(this.hitAreaFrames);
-                // console.log('[Controller] Hitbox debug enabled');
-            } catch (err) {
-                // console.warn('[Controller] Failed to enable hitbox debug:', err);
-            }
+            const frames = new PIXI.Container();
+            const graphics = new Graphics();
+            frames.addChild(graphics);
+
+            const internalModel = (model.internalModel as unknown as ExtendedInternalModel) as any;
+            const hitAreaNames = Object.keys(internalModel.hitAreas ?? {});
+            const texts = hitAreaNames.map((name) => {
+                const text = new PIXI.Text({
+                    text: name,
+                    style: { fontSize: 24, fill: '#ffffff', stroke: { color: '#000000', width: 4 } },
+                });
+                frames.addChild(text);
+                return text;
+            });
+
+            const strokeWidth = 4;
+            const normalColor = 0xe31a1a;
+            const activeColor = 0x1ec832;
+            const tickerCallback = () => {
+                const activeAreas = new Set(
+                    model.hitTest(
+                        this.app.renderer.events.pointer.global.x,
+                        this.app.renderer.events.pointer.global.y,
+                    ),
+                );
+                const matrix = frames.worldTransform;
+                const scale = 1 / Math.sqrt(matrix.a ** 2 + matrix.b ** 2);
+                const transform = internalModel.localTransform;
+
+                graphics.clear();
+                hitAreaNames.forEach((name, i) => {
+                    const hitArea = internalModel.hitAreas[name];
+                    const text = texts[i];
+                    text.visible = activeAreas.has(name);
+
+                    let drawIndex = hitArea.index;
+                    if (drawIndex < 0) {
+                        drawIndex = internalModel.getDrawableIndex(hitArea.id);
+                        if (drawIndex < 0) return;
+                        hitArea.index = drawIndex;
+                    }
+
+                    const bounds = internalModel.getDrawableBounds(drawIndex);
+                    const x = bounds.x * transform.a + transform.tx;
+                    const y = bounds.y * transform.d + transform.ty;
+                    const width = bounds.width * transform.a;
+                    const height = bounds.height * transform.d;
+
+                    graphics
+                        .setStrokeStyle({ width: strokeWidth * scale, color: text.visible ? activeColor : normalColor })
+                        .rect(x, y, width, height)
+                        .stroke();
+
+                    text.x = x + strokeWidth * scale;
+                    text.y = y + strokeWidth * scale;
+                    text.scale.set(scale);
+                });
+            };
+            this.app.ticker.add(tickerCallback);
+            (frames as any).__tickerCallback = tickerCallback;
+
+            this.hitAreaFrames = frames;
+            model.addChild(frames);
         } else if (!enable && this.hitAreaFrames) {
+            const tickerCallback = (this.hitAreaFrames as any).__tickerCallback;
+            if (tickerCallback) this.app.ticker.remove(tickerCallback);
             try {
                 model.removeChild(this.hitAreaFrames);
             } catch (err) {
                 // Already removed or not in model
             }
+            this.hitAreaFrames.destroy({ children: true });
             this.hitAreaFrames = undefined;
-            // console.log('[Controller] Hitbox debug disabled');
         }
     }
 
@@ -1716,15 +1782,6 @@ export class Live2DController {
     fitModelToScreen(displacement?: { x?: number; y?: number }) {
         const model = this.model;
         if (!model) return;
-
-        //
-        // // Debug: Check canvas element vs PIXI app dimensions
-        // const canvasElement = this.canvas as HTMLCanvasElement;
-        // console.log('[Controller] Canvas Element vs PIXI App:', {
-        //     canvasElement: { width: canvasElement.width, height: canvasElement.height, clientWidth: canvasElement.clientWidth, clientHeight: canvasElement.clientHeight },
-        //     appRenderer: { width: this.app.renderer.width, height: this.app.renderer.height },
-        //     windowInner: { width: window.innerWidth, height: window.innerHeight },
-        // });
 
         // 1. Reset scale to 1.0 to measure native bounds
         model.scale.set(1.0);
@@ -1739,7 +1796,6 @@ export class Live2DController {
         const height = model.internalModel.height || model.height;
 
         if (!width || !height) {
-            // console.warn('[Controller] Model has no width/height, defaulting to 1.0 scale');
             this.baseScale = 1.0;
             return;
         }
@@ -1756,13 +1812,6 @@ export class Live2DController {
         // Use the smaller scale to ensure it fits entirely
         // Multiplied by 0.85 for breathing room (padding)
         let fitScale = Math.min(scaleX, scaleY) * 0.85;
-
-        // console.log('[Controller] Calculated Fit-to-Screen Scale:', {
-        //     nativeSize: { width, height },
-        //     rendererSize: { width: canvasWidth, height: canvasHeight },
-        //     logicalSize: { width: this.canvas.clientWidth, height: this.canvas.clientHeight },
-        //     fitScale: fitScale,
-        // });
 
         // Initialize center variables using logical display dimensions, not internal PIXI resolution
         // The canvas is rendered at 2x resolution but displayed at 1x, so position at logical center
@@ -1816,7 +1865,6 @@ export class Live2DController {
             }
         }
 
-        // console.log('[Controller] Final model position:', { centerX, centerY, baseScale: fitScale * 0.5 });
         model.position.set(centerX, centerY);
 
         // Used as the baseline frequency for zoom
@@ -1876,10 +1924,6 @@ export class Live2DController {
                     model.parameters.minimumValues[i] === undefined ||
                     model.parameters.maximumValues[i] === undefined;
 
-                if (hasMissing) {
-                    // console.warn(`[Controller] Parameter ${i} (${model.parameters.ids[i]}) has missing bounds data`);
-                }
-
                 params.push({
                     index: i,
                     name: model.parameters.ids[i] || `Unknown_${i}`,
@@ -1892,7 +1936,6 @@ export class Live2DController {
             }
             return params;
         } catch (e) {
-            // console.warn('[Controller] Failed to get parameters:', e);
             return [];
         }
     }
@@ -1935,8 +1978,6 @@ export class Live2DController {
         this.state.showProgressBar = false;
         this.state.motionProgress = 0;
         this.motionStartTime = 0;
-
-        // console.log('[Controller] Motions paused - parameters can now be adjusted');
     }
 
     resumeMotions() {
@@ -1957,16 +1998,17 @@ export class Live2DController {
 
         try {
             const coreModel = model.internalModel.coreModel as any;
-            coreModel.setParameterValueById(paramName, value);
+            const param = this.state.parameters.find((p) => p.name === paramName);
+            if (!param) return;
+
+            // *ById needs a framework-interned CubismIdHandle; paramName is a plain string, so use the index.
+            coreModel.setParameterValueByIndex(param.index, value);
             model.update(0);
 
             // Optimistically update local state to avoid full re-render
-            const param = this.state.parameters.find((p) => p.name === paramName);
-            if (param) {
-                param.value = value;
-            }
+            param.value = value;
         } catch (e) {
-            // console.warn(`[Controller] Failed to set parameter ${paramName}:`, e);
+            // Silently ignore invalid parameter names or out-of-range values
         }
     }
 
@@ -2026,7 +2068,10 @@ export class Live2DController {
     setPartOpacity(id: string, opacity: number) {
         if (!this.model) return;
         const coreModel = this.model.internalModel.coreModel as any;
-        coreModel.setPartOpacityById?.(id, opacity);
+        // *ById needs a framework-interned CubismIdHandle; id is a plain string, so use the index.
+        const index = this.state.parts.find((p) => p.id === id)?.index;
+        if (index === undefined) return;
+        coreModel.setPartOpacityByIndex?.(index, opacity);
         // Update state to reflect change
         this.refreshPartsState();
     }
@@ -2098,7 +2143,7 @@ export class Live2DController {
                 // Destroy with texture cleanup to release GPU memory and texture cache entries
                 this.model.destroy({ texture: true, baseTexture: true });
             } catch (e) {
-                // console.warn('[Controller] Error destroying model:', e);
+                // Already destroyed or partially initialized
             }
             this.model = undefined;
         }

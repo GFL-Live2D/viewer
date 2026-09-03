@@ -77,7 +77,7 @@
             <p class="text-foreground-tertiary text-xs">
                 Any playing animations override your parameters, you must stop them to free the parameter control.
             </p>
-            <Separator class="bg-background my-2" />
+            <Separator class="bg-border my-2" />
             {#each $controller?.state.parameters ?? [] as param (param.index)}
                 <div class="flex flex-col gap-1">
                     <div class="flex items-center justify-between gap-2">

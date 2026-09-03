@@ -35,10 +35,10 @@
     }
 
     function adjustZoom(delta: number) {
-        const current = $controller?.state.scaleMultiplier ?? 0;
+        const current = $controller?.getCurrentZoom() ?? 0;
         // No clamping - buttons can zoom beyond slider limits
         const newZoom = current + delta;
-        $controller?.setZoom(newZoom);
+        $controller?.setZoom(newZoom, { hard: true });
     }
 </script>
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { Spring } from 'svelte/motion';
+
     let {
         isBgMoveMode = $bindable(false),
         zoom = $bindable(0),
@@ -20,10 +22,14 @@
     // Internal state for base scale
     let bgBaseScale = $state(1);
     let isDraggingBg = $state(false);
+    const zoomSpring = new Spring(zoom, {
+        stiffness: 0.1,
+        damping: 0.8,
+    });
 
-    // Sync derived bgScale
+    // Only explicit UI-slider changes animate; direct manipulation stays under the pointer.
     $effect(() => {
-        bgScale = bgBaseScale * Math.pow(1.1, zoom);
+        bgScale = bgBaseScale * Math.pow(1.1, zoomSpring.current);
     });
 
     // Effect to update hasImage prop
@@ -31,10 +37,25 @@
         hasImage = !!backgroundImage;
     });
 
+    export function setZoom(value: number, options?: { smooth?: boolean }) {
+        const clamped = Math.max(-20, Math.min(20, value));
+        zoom = clamped;
+        void zoomSpring.set(clamped, { instant: !options?.smooth });
+    }
+
+    export function getCurrentZoom() {
+        return zoomSpring.current;
+    }
+
     export function reset() {
         bgX = 0;
         bgY = 0;
-        zoom = 0;
+        setZoom(0);
+    }
+
+    export function clear() {
+        backgroundImage = '';
+        reset();
     }
 
     function handleDragOver(e: DragEvent) {
@@ -42,8 +63,10 @@
         if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
     }
 
+    const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
+
     export function loadAndSetBackgroundImage(blob: Blob) {
-        if (!blob.type.startsWith('image/')) return;
+        if (!SUPPORTED_IMAGE_TYPES.includes(blob.type)) return;
 
         const reader = new FileReader();
         reader.onload = (evt) => {
@@ -58,7 +81,7 @@
                     const scaleH = screenH / img.height;
 
                     bgBaseScale = Math.min(scaleW, scaleH);
-                    zoom = 0;
+                    setZoom(0);
                     bgX = 0;
                     bgY = 0;
                 };
@@ -155,6 +178,14 @@
 
     let touchStartX = 0;
     let touchStartY = 0;
+    let pinchStartDistance = 0;
+    let pinchStartZoom = 0;
+
+    function getTouchDistance(touches: TouchList) {
+        const dx = touches[1].clientX - touches[0].clientX;
+        const dy = touches[1].clientY - touches[0].clientY;
+        return Math.hypot(dx, dy);
+    }
 
     function handleWindowTouchStart(e: TouchEvent) {
         if (!backgroundImage) return;
@@ -165,9 +196,12 @@
             return;
         }
 
-        // Two finger touch or move mode
-        if (e.touches.length === 2 || (e.touches.length === 1 && isBgMoveMode)) {
-            // e.preventDefault(); // Don't block all touch immediately
+        if (isBgMoveMode && e.touches.length === 2) {
+            if (e.cancelable) e.preventDefault();
+            isDraggingBg = false;
+            pinchStartDistance = getTouchDistance(e.touches);
+            pinchStartZoom = zoomSpring.current;
+            return;
         }
 
         if (isBgMoveMode && e.touches.length === 1) {
@@ -179,6 +213,14 @@
     }
 
     function handleWindowTouchMove(e: TouchEvent) {
+        if (isBgMoveMode && e.touches.length === 2 && pinchStartDistance > 0) {
+            if (e.cancelable) e.preventDefault();
+            const scale = getTouchDistance(e.touches) / pinchStartDistance;
+            const targetZoom = pinchStartZoom + Math.log(scale) / Math.log(1.1);
+            setZoom(targetZoom);
+            return;
+        }
+
         if (isDraggingBg && e.touches.length > 0) {
             if (e.cancelable) e.preventDefault();
             const clientX = e.touches[0].clientX;
@@ -195,8 +237,16 @@
         }
     }
 
-    function handleWindowTouchEnd() {
-        if (isDraggingBg) {
+    function handleWindowTouchEnd(e: TouchEvent) {
+        if (e.touches.length < 2) {
+            pinchStartDistance = 0;
+        }
+
+        if (isBgMoveMode && e.touches.length === 1) {
+            isDraggingBg = true;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        } else if (e.touches.length === 0) {
             isDraggingBg = false;
         }
     }
@@ -213,7 +263,7 @@
         if (isBgMoveMode) {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.5 : -0.5;
-            zoom = Math.max(-20, Math.min(20, zoom + delta));
+            setZoom(zoomSpring.current + delta);
         }
     }
 </script>

@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onDestroy, untrack } from 'svelte';
+    import { slide } from 'svelte/transition';
     import { browser } from '$app/environment';
-    import { Info, ImageUp, ChevronDown } from '@lucide/svelte';
+    import { Check, ChevronDown, Info, ImageUp, Link } from '@lucide/svelte';
 
     import MorphingChevron from '$lib/components/MorphingChevron.svelte';
     import GunLive2D from '$lib/components/GunLive2D.svelte';
@@ -13,6 +14,7 @@
     import ModelFilters from '$lib/components/ModelFilters.svelte';
     import ModelList from '$lib/components/ModelList.svelte';
     import ModelInfoPanel from '$lib/components/ModelInfoPanel.svelte';
+    import GunNameDisplay from '$lib/components/GunNameDisplay.svelte';
     import MotionControlsPanel from '$lib/components/MotionControlsPanel.svelte';
     import ParametersPanel from '$lib/components/ParametersPanel.svelte';
     import PartsPanel from '$lib/components/PartsPanel.svelte';
@@ -25,7 +27,6 @@
     import censorRules from '$lib/data/censor.json';
     import * as Resizable from '$lib/components/ui/resizable';
     import * as Popover from '$lib/components/ui/popover';
-    import * as Accordion from '$lib/components/ui/accordion';
 
     import {
         selectedModel,
@@ -47,6 +48,7 @@
 
     let {
         models,
+        aliases = {},
         motionData,
         voiceData,
         modelSearchTerms,
@@ -147,28 +149,41 @@
     let activeTab = $state<'info' | 'motions' | 'params' | 'parts'>('info');
     let isTabPanelOpen = $state(true); // For tablet collapse
     let drawerHeight = $state(45); // Mobile drawer height as percentage (40-85%)
+    let mobileModelDetailsExpanded = $state(false);
     let dragStartY = $state(0);
     let dragStartHeight = $state(0);
 
-    // Track window width for responsive positioning (SSR-safe)
-    let isDesktopWidth = $state(false);
-    let hasSidePanelLayout = $state(false);
-    let viewportHeight = $state(0);
+    // Null until measured on the client. Inset-positioned overlays stay unrendered while it is
+    // null, since SSR would otherwise bake in zero insets that hydration does not repaint.
+    let viewport = $state<{ width: number; height: number } | null>(
+        browser ? { width: window.innerWidth, height: window.innerHeight } : null,
+    );
 
-    // Mobile Info Accordion State (expanded by default)
-    let mobileInfoAccordionValue = $state<string | undefined>('model-info');
+    let isDesktopWidth = $derived((viewport?.width ?? 0) >= 1800);
+    let hasSidePanelLayout = $derived((viewport?.width ?? 0) >= 768);
+    let viewportHeight = $derived(viewport?.height ?? 0);
 
     $effect(() => {
-        if (browser) {
-            const updateWidth = () => {
-                isDesktopWidth = window.innerWidth >= 1800;
-                hasSidePanelLayout = window.innerWidth >= 768;
-                viewportHeight = window.innerHeight;
-            };
-            updateWidth();
-            window.addEventListener('resize', updateWidth);
-            return () => window.removeEventListener('resize', updateWidth);
-        }
+        const updateViewport = () => {
+            viewport = { width: window.innerWidth, height: window.innerHeight };
+        };
+        updateViewport();
+        window.addEventListener('resize', updateViewport);
+        return () => window.removeEventListener('resize', updateViewport);
+    });
+
+    // Keep transient canvas UI centered in the currently visible model area. Null before the
+    // viewport is measured, which leaves CanvasOverlay on its CSS breakpoint defaults.
+    let canvasInsets = $derived.by(() => {
+        // hideUI is resolved server-side, so its zero insets are safe to emit before measuring.
+        if (hideUI) return { left: 0, right: 0, bottom: 0 };
+        if (!viewport) return { left: null, right: null, bottom: null };
+
+        return {
+            left: hasSidePanelLayout && isLeftPanelOpen ? (isDesktopWidth ? 600 : 400) : 0,
+            right: isDesktopWidth && isAllPanelsExpanded ? (isParametersPanelOpen ? 600 : 300) : 0,
+            bottom: !hasSidePanelLayout ? viewportHeight * (drawerHeight / 100) : 0,
+        };
     });
 
     // Note: modelSearchTerms passed as prop, already computed server-side
@@ -253,17 +268,7 @@
     $effect(() => {
         if (!controller) return;
 
-        let leftInset = 0;
-        let rightInset = 0;
-        let bottomInset = 0;
-
-        if (!hideUI) {
-            leftInset = hasSidePanelLayout && isLeftPanelOpen ? (isDesktopWidth ? 600 : 400) : 0;
-            rightInset = isDesktopWidth && isAllPanelsExpanded ? (isParametersPanelOpen ? 600 : 300) : 0;
-            bottomInset = !hasSidePanelLayout ? viewportHeight * (drawerHeight / 100) : 0;
-        }
-
-        controller.setCaptionInsets(leftInset, rightInset, bottomInset);
+        controller.setCaptionInsets(canvasInsets.left, canvasInsets.right, canvasInsets.bottom);
     });
 
     $effect(() => {
@@ -306,6 +311,31 @@
         const v = variant.toLowerCase();
         if (v === 'damaged') return 'destroy';
         return variant;
+    }
+
+    function findModelByQuery(query: string): Live2DModelIndex | undefined {
+        const target = (aliases[query] ?? query).toLowerCase();
+
+        const exact = models.find((m: Live2DModelIndex) => {
+            const code = m.code.toLowerCase();
+            return (
+                (m.gunName || '').toLowerCase() === target ||
+                code === target ||
+                code.replace(/_\d+$/, '') === target ||
+                m.directory.toLowerCase() === target ||
+                (m.costumeName || '').toLowerCase() === target
+            );
+        });
+        if (exact) return exact;
+
+        const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanTarget = clean(target);
+        return models.find(
+            (m: Live2DModelIndex) =>
+                clean(m.gunName || '') === cleanTarget ||
+                clean(m.code) === cleanTarget ||
+                clean(m.costumeName || '') === cleanTarget,
+        );
     }
 
     let currentDisplayVariant = $derived(getDisplayVariant($selectedVariant));
@@ -453,18 +483,14 @@
                 const params = new URLSearchParams(window.location.search);
                 const modelQuery = params.get('model')?.toLowerCase();
                 if (modelQuery) {
-                    initialModel = models.find(
-                        (m: Live2DModelIndex) =>
-                            m.code.toLowerCase() === modelQuery ||
-                            m.code.toLowerCase().replace(/_\d+$/, '') === modelQuery ||
-                            m.directory.toLowerCase() === modelQuery,
-                    );
+                    initialModel = findModelByQuery(modelQuery);
                 }
                 queryVariant = getInternalVariant(params.get('variant') ?? '');
             }
 
             if (!initialModel) {
-                initialModel = models[Math.floor(Math.random() * models.length)];
+                // Random pick comes from the visible list so filters don't get contradicted on load
+                initialModel = filteredModels[Math.floor(Math.random() * filteredModels.length)];
             }
 
             if (initialModel) {
@@ -631,6 +657,7 @@
                     voiceData={filteredVoiceData}
                     normalVoiceData={filteredNormalVoiceData}
                     {assetBaseUrl}
+                    overlayInsets={canvasInsets}
                     bind:controller
                     bind:canvas
                     {isBgMoveMode}
@@ -641,7 +668,11 @@
 
         <!-- Initial Loading GIF (before model selection) -->
         {#if !$selectedCharacterEntry}
-            <CanvasOverlay>
+            <CanvasOverlay
+                leftInset={canvasInsets.left}
+                rightInset={canvasInsets.right}
+                bottomInset={canvasInsets.bottom}
+            >
                 <div class="text-center">
                     <img src="/gfloading.gif" alt="Loading..." class="mx-auto mb-4 h-24 w-24" />
                     <p class="text-foreground-secondary font-medium">Select a model to begin</p>
@@ -741,7 +772,7 @@
                     <!-- Panel toggle chevron (tablet only, md-xl) - matches desktop styling -->
                     <button
                         onclick={togglePanel}
-                        class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:bg-accent/20 hover:text-accent hidden h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:flex 2xl:hidden"
+                        class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:text-accent hidden h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:flex 2xl:hidden"
                         title={isLeftPanelOpen ? 'Collapse list' : 'Expand list'}
                         aria-label={isLeftPanelOpen ? 'Collapse model list panel' : 'Expand model list panel'}
                         aria-pressed={isLeftPanelOpen}
@@ -949,44 +980,110 @@
                         </div>
                     {:else if activeTab === 'motions'}
                         <div class="custom-scrollbar flex h-full flex-col overflow-y-auto">
-                            <!-- Model Info (collapsible on mobile) -->
-                            <Accordion.Root type="single" class="w-full" bind:value={mobileInfoAccordionValue}>
-                                <Accordion.Item value="model-info" class="border-0">
-                                    <!-- Utility Buttons (always visible, chevron inline on mobile) -->
-                                    <div class="grid grid-cols-3 gap-2 px-4 pt-4 md:grid-cols-2">
-                                        <!-- Accordion trigger (mobile only, 3rd column) -->
-                                        <Accordion.Trigger
-                                            class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground flex h-10 items-center justify-center rounded border px-3 text-xs font-medium transition hover:no-underline md:hidden [&>svg:last-child]:hidden"
-                                        >
-                                            {mobileInfoAccordionValue === 'model-info' ? 'Hide Info' : 'Show Info'}
-                                        </Accordion.Trigger>
-                                        <button
-                                            onclick={handleReset}
-                                            class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition"
-                                        >
-                                            Reset Model
-                                        </button>
-                                        <button
-                                            onclick={() => {
-                                                if (controller) {
-                                                    controller.state.showHitboxDebug =
-                                                        !controller.state.showHitboxDebug;
-                                                }
-                                            }}
-                                            class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition {controller
-                                                ?.state.showHitboxDebug
-                                                ? 'border-accent text-accent'
-                                                : ''}"
-                                        >
-                                            {controller?.state.showHitboxDebug ? 'Hide Hitboxes' : 'Show Hitboxes'}
-                                        </button>
-                                    </div>
+                            <div class="grid grid-cols-2 gap-2 px-4 pt-4">
+                                <button
+                                    onclick={handleReset}
+                                    class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition"
+                                >
+                                    Reset Model
+                                </button>
+                                <button
+                                    onclick={() => {
+                                        if (controller) {
+                                            controller.state.showHitboxDebug = !controller.state.showHitboxDebug;
+                                        }
+                                    }}
+                                    class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition {controller
+                                        ?.state.showHitboxDebug
+                                        ? 'border-accent text-accent'
+                                        : ''}"
+                                >
+                                    {controller?.state.showHitboxDebug ? 'Hide Hitboxes' : 'Show Hitboxes'}
+                                </button>
+                            </div>
 
-                                    <Accordion.Content class="pb-0">
-                                        <ModelInfoPanel />
-                                    </Accordion.Content>
-                                </Accordion.Item>
-                            </Accordion.Root>
+                            <div class="px-4 pt-4">
+                                <div class="flex items-center">
+                                    <h2
+                                        class="text-foreground flex min-w-0 flex-1 items-center gap-3 text-2xl font-semibold tracking-tight"
+                                    >
+                                        <GunNameDisplay
+                                            name={selectedModelName ||
+                                                $selectedCharacterEntry?.code ||
+                                                $selectedModel ||
+                                                'Select Model'}
+                                            iconSize="h-6 w-6 ml-1"
+                                            iconColor="#F05A1C"
+                                        />
+                                        <button
+                                            onclick={handleCopyLink}
+                                            class="text-foreground-tertiary hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200 active:scale-95"
+                                            title="Copy direct link"
+                                            aria-label="Copy direct link"
+                                        >
+                                            {#if isCopied}
+                                                <Check class="h-4 w-4 text-emerald-500" />
+                                            {:else}
+                                                <Link class="h-4 w-4" />
+                                            {/if}
+                                        </button>
+                                    </h2>
+                                    <button
+                                        onclick={() => (mobileModelDetailsExpanded = !mobileModelDetailsExpanded)}
+                                        class="text-foreground-tertiary hover:bg-background-tertiary hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
+                                        title={mobileModelDetailsExpanded ? 'Hide model details' : 'Show model details'}
+                                        aria-label={mobileModelDetailsExpanded
+                                            ? 'Hide model details'
+                                            : 'Show model details'}
+                                        aria-expanded={mobileModelDetailsExpanded}
+                                    >
+                                        <ChevronDown
+                                            class="h-5 w-5 transition-transform duration-200 {mobileModelDetailsExpanded
+                                                ? 'rotate-180'
+                                                : ''}"
+                                        />
+                                    </button>
+                                </div>
+
+                                {#if mobileModelDetailsExpanded}
+                                    <div class="overflow-hidden" transition:slide={{ duration: 200 }}>
+                                        <div class="text-md space-y-2.5 pt-4">
+                                            {#if $selectedCharacterEntry?.costumeName}
+                                                <div class="text-accent flex gap-3">
+                                                    <div
+                                                        class="my-0.5 w-0.5 shrink-0 self-stretch"
+                                                        style="background: linear-gradient(to bottom, var(--color-accent-secondary), var(--color-accent));"
+                                                    ></div>
+                                                    <span class="py-0.5 leading-tight font-bold"
+                                                        >{$selectedCharacterEntry.costumeName}</span
+                                                    >
+                                                </div>
+                                            {/if}
+                                            <div class="text-foreground-secondary flex gap-3">
+                                                <div
+                                                    class="my-0.5 w-0.5 shrink-0 self-stretch"
+                                                    style="background: var(--text-tertiary);"
+                                                ></div>
+                                                <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
+                                                    >{currentDisplayVariant || 'Normal'}</span
+                                                >
+                                            </div>
+                                            {#if $selectedCharacterEntry?.code}
+                                                <div class="text-foreground-tertiary flex gap-3">
+                                                    <div
+                                                        class="my-0.5 w-0.5 shrink-0 self-stretch"
+                                                        style="background: var(--text-tertiary);"
+                                                    ></div>
+                                                    <span
+                                                        class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
+                                                        >{$selectedCharacterEntry.code}</span
+                                                    >
+                                                </div>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
 
                             <hr class="border-border mt-4" />
                             <MotionControlsPanel onPlayMotion={playMotion} onReset={handleReset} />
