@@ -8,6 +8,7 @@
         variantsByModel,
         modelNames,
         sortBy,
+        preferredVariantKind,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d';
 
@@ -43,7 +44,12 @@
                 if (directory) {
                     const variants = $variantsByModel[directory] ?? [];
                     if (variants.length > 0) {
-                        return variants.find((v) => v.toLowerCase() === 'normal') || variants[0];
+                        const preferred = $preferredVariantKind;
+                        return (
+                            variants.find((v) => formatVariant(v).toLowerCase() === preferred) ||
+                            variants.find((v) => v.toLowerCase() === 'normal') ||
+                            variants[0]
+                        );
                     }
                 }
                 return 'normal';
@@ -205,7 +211,7 @@
                         class="overflow-hidden bg-transparent transition-colors {$selectedModel === model.id
                             ? 'hover:bg-accent-hover/30'
                             : 'hover:bg-background-tertiary/20'}"
-                        style={isMobileTablet && $selectedModel !== model.id ? 'width: 100%;' : 'width: 320px;'}
+                        style={isMobileTablet ? 'width: 100%;' : 'width: 320px;'}
                     >
                         <div
                             role="presentation"
@@ -243,7 +249,7 @@
                         </div>
                     </button>
 
-                    {#if ($variantsByModel[model.directory]?.length ?? 0) > 0 && (!isMobileTablet || $selectedModel === model.id)}
+                    {#if !isMobileTablet && ($variantsByModel[model.directory]?.length ?? 0) > 0}
                         <div
                             class="border-border bg-background-tertiary/50 grid grow gap-px border-l"
                             style="grid-template-columns: repeat({$variantsByModel[model.directory].length}, 1fr);"

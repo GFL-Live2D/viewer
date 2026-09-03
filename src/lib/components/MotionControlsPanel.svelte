@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { controller, isCaptionDetached } from '$lib/stores/gun-page';
+    import { controller, isCaptionDetached, uiState } from '$lib/stores/gun-page';
     import MotionGrid from '$lib/components/MotionGrid.svelte';
     import DetachableCaption from '$lib/components/DetachableCaption.svelte';
     import Separator from '$lib/components/ui/separator/separator.svelte';
     import { Checkbox } from '$lib/components/ui/checkbox';
     import { Label } from '$lib/components/ui/label';
+    import { SlidersHorizontal } from '@lucide/svelte';
 
     let {
         onPlayMotion,
@@ -13,12 +14,27 @@
         onPlayMotion: (groupName: string, variantIndex: number) => void;
         onReset: () => void;
     } = $props();
+
+    function toggleParametersPanel() {
+        uiState.update((s) => ({ ...s, isParametersPanelOpen: !s.isParametersPanelOpen }));
+    }
 </script>
 
 <!-- Motion Buttons Grid -->
 {#if $controller?.state.motionGroups?.length}
     <div class="overflow-y-auto px-6 py-4">
-        <h3 class="subtitle text-foreground-secondary mb-3 text-lg font-semibold tracking-wide">Motions</h3>
+        <div class="mb-3 flex items-center justify-between">
+            <h3 class="subtitle text-foreground-secondary text-lg font-semibold tracking-wide">Motions</h3>
+            <button
+                onclick={toggleParametersPanel}
+                class="group/btn border-border bg-background-secondary/80 hover:border-accent hover:bg-accent/10 hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-300 active:scale-95 2xl:flex"
+                title="Toggle parameters and parts panel"
+            >
+                <SlidersHorizontal
+                    class="text-foreground-secondary group-hover/btn:text-foreground h-5 w-5 transition-all duration-300"
+                />
+            </button>
+        </div>
         <p class="text-foreground-tertiary text-xs">
             Only one motion can play at a time. You must wait for it to finish or reset the model before playing
             another.

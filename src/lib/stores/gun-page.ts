@@ -10,6 +10,9 @@ export const selectedModel = writable<string>('');
 export const selectedVariant = writable<string>('');
 export const selectedCharacterEntry = writable<Live2DModelIndex | null>(null);
 
+// Last normal/damaged choice
+export const preferredVariantKind = writable<'normal' | 'damaged'>('normal');
+
 // Model data
 export const models = writable<Live2DModelIndex[]>([]);
 export const filteredModels = writable<any[]>([]);

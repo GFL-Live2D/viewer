@@ -1,7 +1,18 @@
 <script lang="ts">
-    import { selectedCharacterEntry, selectedModel, selectedVariant, uiState, modelNames } from '$lib/stores/gun-page';
+    import {
+        selectedCharacterEntry,
+        selectedModel,
+        selectedVariant,
+        modelNames,
+        variantsByModel,
+    } from '$lib/stores/gun-page';
     import GunNameDisplay from '$lib/components/GunNameDisplay.svelte';
-    import { Check, Link, SlidersHorizontal } from '@lucide/svelte';
+    import { Check, Link, ArrowLeftRight } from '@lucide/svelte';
+    import fitty, { type FittyInstance } from 'fitty';
+
+    let { onSwapVariant = (modelId: string, variant: string) => {} } = $props<{
+        onSwapVariant?: (modelId: string, variant: string) => void;
+    }>();
 
     let isCopied = $state(false);
     let copiedTimeout: ReturnType<typeof setTimeout> | undefined = $state(undefined);
@@ -43,22 +54,53 @@
         }
     }
 
-    function toggleParametersPanel() {
-        uiState.update((s) => ({ ...s, isParametersPanelOpen: !s.isParametersPanelOpen }));
+    function formatVariant(variant: string) {
+        const v = variant.toLowerCase();
+        return v === 'destroy' ? 'damaged' : v;
     }
+
+    let otherVariant = $derived.by(() => {
+        const entry = $selectedCharacterEntry;
+        if (!entry) return undefined;
+        const variants = $variantsByModel[entry.directory] ?? [];
+        return variants.find((v) => v !== $selectedVariant);
+    });
+
+    function handleSwapVariant() {
+        const entry = $selectedCharacterEntry;
+        if (!entry || !otherVariant) return;
+        onSwapVariant(entry.id, otherVariant);
+    }
+
+    // Auto-fit costume name to one line via fitty (handles resize + mutation observation itself).
+    let costumeNameEl = $state<HTMLSpanElement | undefined>();
+    let fittyInstance: FittyInstance | undefined;
+
+    $effect(() => {
+        if (!costumeNameEl) return;
+        fittyInstance = fitty(costumeNameEl, { minSize: 10, maxSize: 18, multiLine: false });
+        return () => fittyInstance?.unsubscribe();
+    });
+
+    $effect(() => {
+        // Re-fit whenever the costume name text changes.
+        $selectedCharacterEntry?.costumeName;
+        fittyInstance?.fit();
+    });
 </script>
 
 <!-- Header Info with refined styling -->
 <div class="group @container relative flex flex-col overflow-hidden select-text">
     <!-- Main content -->
-    <div class="relative flex-1 px-4 pt-4 md:pb-4 2xl:p-6">
+    <div class="relative flex-1 p-4">
         <!-- Title and metadata -->
-        <div class="space-y-4">
+        <div class="space-y-3">
             <!-- Model name section with controls -->
             <div class="flex items-start gap-0">
                 <!-- Title (Center area, wraps) -->
                 <h2
-                    class="text-foreground flex min-w-0 flex-1 flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight @max-sm:gap-2 @max-sm:text-lg @max-xs:text-base"
+                    class="text-foreground flex min-w-0 flex-1 flex-wrap items-center gap-3 font-semibold tracking-tight"
+                    style="font-size: clamp(1.25rem, 6cqw + 0.5rem, 2.25rem);"
                 >
                     <span class="min-w-0">
                         <GunNameDisplay
@@ -71,54 +113,67 @@
                     <!-- Copy Link Button (Inline with title, centered vertically) -->
                     <button
                         onclick={handleCopyLink}
-                        class="text-foreground-tertiary hover:text-foreground bg-background-secondary/50 hover:bg-background-tertiary flex h-8 w-8 flex-shrink-0 items-center justify-center self-center rounded-lg transition-all duration-200 active:scale-95"
+                        class="text-foreground-tertiary hover:text-foreground bg-background-secondary/50 hover:bg-background-tertiary flex h-9 w-9 flex-shrink-0 items-center justify-center self-center rounded-lg transition-all duration-200 active:scale-95"
                         title="Copy direct link"
                         aria-label="Copy direct link"
                     >
                         {#if isCopied}
-                            <Check class="h-4 w-4 text-emerald-500" />
+                            <Check class="h-5 w-5 text-emerald-500" />
                         {:else}
-                            <Link class="h-4 w-4" />
+                            <Link class="h-5 w-5" />
                         {/if}
                     </button>
                 </h2>
-
-                <!-- Toggle Panel Button (Top Right, desktop only) -->
-                <button
-                    onclick={toggleParametersPanel}
-                    class="group/btn border-border bg-background-secondary/80 hover:border-accent hover:bg-accent/10 hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-300 active:scale-95 2xl:flex"
-                    title="Toggle parameters and parts panel"
-                >
-                    <SlidersHorizontal
-                        class="text-foreground-secondary group-hover/btn:text-foreground h-5 w-5 transition-all duration-300"
-                    />
-                </button>
             </div>
 
             <!-- Metadata section -->
             <div class="text-md space-y-2.5">
                 {#if $selectedCharacterEntry?.costumeName}
                     <div class="text-accent flex min-w-0 gap-3">
-                        <div
-                            class="my-0.5 w-0.5 shrink-0 self-stretch"
-                            style="background: linear-gradient(to bottom, var(--color-accent-secondary), var(--color-accent));"
-                        ></div>
-                        <span class="min-w-0 py-0.5 text-lg leading-tight font-bold @max-sm:text-base @max-xs:text-sm"
-                            >{$selectedCharacterEntry.costumeName}</span
+                        <div class="flex w-4 shrink-0 justify-center self-stretch">
+                            <div
+                                class="my-0.5 w-0.5"
+                                style="background: linear-gradient(to bottom, var(--color-accent-secondary), var(--color-accent));"
+                            ></div>
+                        </div>
+                        <div class="min-w-0 flex-1 overflow-hidden">
+                            <span
+                                bind:this={costumeNameEl}
+                                class="block py-0.5 leading-tight font-bold whitespace-nowrap"
+                                >{$selectedCharacterEntry.costumeName}</span
+                            >
+                        </div>
+                    </div>
+                {/if}
+                {#if $selectedCharacterEntry?.code}
+                    <div class="text-foreground-tertiary flex gap-3">
+                        <div class="flex w-4 shrink-0 justify-center self-stretch">
+                            <div class="my-0.5 w-0.5" style="background: var(--text-tertiary);"></div>
+                        </div>
+                        <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
+                            >{$selectedCharacterEntry.code}</span
                         >
                     </div>
                 {/if}
-                <div class="text-foreground-secondary flex gap-3">
-                    <div class="my-0.5 w-0.5 shrink-0 self-stretch" style="background: var(--text-tertiary);"></div>
-                    <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
-                        >{currentDisplayVariant || 'Normal'}</span
+                {#if otherVariant}
+                    <button
+                        onclick={handleSwapVariant}
+                        class="text-foreground-secondary hover:text-foreground hover:bg-background-tertiary -my-0.5 flex items-center gap-3 rounded py-0.5 pr-1.5 transition-colors"
+                        title="Switch to {formatVariant(otherVariant)}"
+                        aria-label="Switch variant"
                     >
-                </div>
-                {#if $selectedCharacterEntry?.code}
-                    <div class="text-foreground-tertiary flex gap-3">
-                        <div class="my-0.5 w-0.5 shrink-0 self-stretch" style="background: var(--text-tertiary);"></div>
-                        <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
-                            >{$selectedCharacterEntry.code}</span
+                        <div class="flex w-4 shrink-0 justify-center">
+                            <ArrowLeftRight class="h-3.5 w-3.5" />
+                        </div>
+                        <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
+                            >{currentDisplayVariant || 'Normal'}</span
+                        >
+                    </button>
+                {:else}
+                    <div class="text-foreground-secondary flex gap-3">
+                        <div class="w-4 shrink-0"></div>
+                        <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
+                            >{currentDisplayVariant || 'Normal'}</span
                         >
                     </div>
                 {/if}

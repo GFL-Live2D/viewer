@@ -2,7 +2,7 @@
     import { onDestroy, untrack } from 'svelte';
     import { slide } from 'svelte/transition';
     import { browser } from '$app/environment';
-    import { Check, ChevronDown, Info, ImageUp, Link } from '@lucide/svelte';
+    import { Check, ChevronDown, Info, ImageUp, Link, ArrowLeftRight } from '@lucide/svelte';
 
     import MorphingChevron from '$lib/components/MorphingChevron.svelte';
     import GunLive2D from '$lib/components/GunLive2D.svelte';
@@ -43,6 +43,7 @@
         uiState,
         viewerPreferences,
         isCaptionDetached,
+        preferredVariantKind,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
 
@@ -403,6 +404,9 @@
                 const isTablet = window.innerWidth >= 768 && window.innerWidth < 1800;
                 if (isTablet && isLeftPanelOpen && !hideUI) {
                     controller?.fitModelToScreen({ x: 200 });
+                } else if (!hasSidePanelLayout && !hideUI && canvasInsets.bottom) {
+                    // Center within the area above the bottom drawer on mobile
+                    controller?.fitModelToScreen({ y: -canvasInsets.bottom / 2 });
                 }
             }, 50);
         }
@@ -420,8 +424,22 @@
         resetModel();
         selectedModel.set(modelId);
         selectedVariant.set(variant);
+        preferredVariantKind.set(getDisplayVariant(variant) === 'damaged' ? 'damaged' : 'normal');
         const entry = models.find((m: Live2DModelIndex) => m.id === modelId);
         selectedCharacterEntry.set(entry ?? null);
+    }
+
+    let otherVariant = $derived.by(() => {
+        const entry = $selectedCharacterEntry;
+        if (!entry) return undefined;
+        const variants = $variantsByModel[entry.directory] ?? [];
+        return variants.find((v) => v !== $selectedVariant);
+    });
+
+    function handleSwapVariant() {
+        const entry = $selectedCharacterEntry;
+        if (!entry || !otherVariant) return;
+        selectModelVariant(entry.id, otherVariant);
     }
 
     function playMotion(groupName: string, variantIndex: number) {
@@ -719,7 +737,7 @@
                             {:else if activeTab === 'motions'}
                                 <div class="custom-scrollbar flex h-full flex-col overflow-y-auto">
                                     <div class="border-border bg-background-secondary/50 border-b">
-                                        <ModelInfoPanel />
+                                        <ModelInfoPanel onSwapVariant={selectModelVariant} />
                                     </div>
                                     <div class="grid grid-cols-2 gap-2 px-4 pt-3 pb-3">
                                         <button
@@ -798,14 +816,31 @@
                 style="transition-duration: {isParametersPanelOpen ? 600 : 300}ms;"
             >
                 <!-- RIGHT SPEED DIAL: Positioned relative to right panel edge (desktop only) -->
-                <div class="absolute top-4 right-full z-50 mr-4 flex flex-col gap-3" style="pointer-events: auto;">
-                    <!-- HideUI Button (always visible) -->
-                    <RevealButton
-                        isVisible={!hideUI}
-                        enableFlash={hideUIOnLoad}
-                        onToggle={handleRevealToggle}
-                        variant="desktop"
-                    />
+                <div
+                    class="absolute top-4 right-full z-50 mr-4 flex flex-col items-end gap-3"
+                    style="pointer-events: auto;"
+                >
+                    <!-- HideUI Button (always visible) + Swap Variant Button (hideable) -->
+                    <div class="flex flex-row gap-3">
+                        {#if otherVariant}
+                            <button
+                                onclick={handleSwapVariant}
+                                class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:bg-accent/10 hover:text-foreground flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition-all duration-300 {hideUI
+                                    ? 'pointer-events-none opacity-0'
+                                    : ''}"
+                                title="Switch to {getDisplayVariant(otherVariant)}"
+                                aria-label="Switch variant"
+                            >
+                                <ArrowLeftRight class="h-5 w-5" />
+                            </button>
+                        {/if}
+                        <RevealButton
+                            isVisible={!hideUI}
+                            enableFlash={hideUIOnLoad}
+                            onToggle={handleRevealToggle}
+                            variant="desktop"
+                        />
+                    </div>
 
                     <!-- BG Controls (hideable) -->
                     <PanelControls {bgHasImage} bind:isBgMoveMode bind:bgZoom {bgManager} {hideUI} />
@@ -854,7 +889,7 @@
                         <!-- Model Info (collapsible on mobile) -->
                         <!-- Model Info -->
                         <div class="border-border bg-background-secondary/50 border-b">
-                            <ModelInfoPanel />
+                            <ModelInfoPanel onSwapVariant={selectModelVariant} />
                         </div>
 
                         <!-- Utility Buttons (Desktop) -->
@@ -901,9 +936,23 @@
             </div>
 
             <!-- Top right: HideUI + BG controls -->
-            <div class="pointer-events-auto fixed top-4 right-4 z-20 flex flex-col gap-3">
-                <!-- HideUI button (always visible, manages its own fade) -->
-                <RevealButton isVisible={!hideUI} enableFlash={hideUIOnLoad} onToggle={handleRevealToggle} />
+            <div class="pointer-events-auto fixed top-4 right-4 z-20 flex flex-col items-end gap-3">
+                <!-- HideUI button (always visible, manages its own fade) + Swap Variant Button (hideable) -->
+                <div class="flex flex-row gap-3">
+                    {#if otherVariant}
+                        <button
+                            onclick={handleSwapVariant}
+                            class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:bg-accent/10 hover:text-foreground flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition-all duration-300 {hideUI
+                                ? 'pointer-events-none opacity-0'
+                                : ''}"
+                            title="Switch to {getDisplayVariant(otherVariant)}"
+                            aria-label="Switch variant"
+                        >
+                            <ArrowLeftRight class="h-5 w-5" />
+                        </button>
+                    {/if}
+                    <RevealButton isVisible={!hideUI} enableFlash={hideUIOnLoad} onToggle={handleRevealToggle} />
+                </div>
 
                 <!-- BG controls wrapper (affected by hideUI) -->
                 <div class="flex flex-col gap-3">
