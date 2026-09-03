@@ -8,6 +8,7 @@
         variant,
         motionData = undefined,
         voiceData = undefined,
+        normalVoiceData = undefined,
         assetBaseUrl = '/assets',
         controller = $bindable<Live2DController | undefined>(),
         canvas = $bindable<HTMLCanvasElement | undefined>(),
@@ -55,7 +56,15 @@
 
     async function load(shouldResetZoom: boolean = true) {
         if (!controller || !characterEntry) return;
-        await controller.loadCharacter(characterEntry, variant, motionData, voiceData, shouldResetZoom, assetBaseUrl);
+        await controller.loadCharacter(
+            characterEntry,
+            variant,
+            motionData,
+            voiceData,
+            shouldResetZoom,
+            assetBaseUrl,
+            normalVoiceData,
+        );
     }
 
     function getMidpoint(pointers: Map<number, { x: number; y: number }>) {

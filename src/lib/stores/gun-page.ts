@@ -21,6 +21,7 @@ export const searchQuery = writable<string>('');
 export const sortBy = writable<'gun' | 'id' | 'name'>('gun');
 export const filterDuplicates = writable<boolean>(true);
 export const decensor = writable<boolean>(false);
+export const isCaptionDetached = writable<boolean>(false);
 
 // UI layout state (desktop/mobile can share or override these)
 export const uiState = writable({

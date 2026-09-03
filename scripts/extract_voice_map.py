@@ -171,7 +171,8 @@ def save_output(stc_records: List[Dict], voice_map: Dict) -> None:
         json.dump(motions_list, f, ensure_ascii=False, indent=4)
     print(f"[Success] Saved {len(motions_list)} motion entries to motions.json")
 
-    # voice.json: array of { id: motion_id, voice_key, caption } for O(1) lookup by motion id
+    # voice.json: array of { id, char_code, voice_key, caption }, keyed by motion id.
+    # char_code is STC's own voice bank id, which can differ from live2d.json's skin code.
     voice_list = []
     for record in stc_records:
         motion_id = record.get("motion_id")
@@ -179,6 +180,7 @@ def save_output(stc_records: List[Dict], voice_map: Dict) -> None:
             continue
 
         voice_string = record.get("voice_string", "")
+        char_code = ""
         voice_key = ""
         caption = ""
 
@@ -188,8 +190,11 @@ def save_output(stc_records: List[Dict], voice_map: Dict) -> None:
                 char_code = parts[1]
                 voice_key = parts[2]
                 caption = voice_map.get(char_code, {}).get(voice_key, "")
+                if not caption and char_code.endswith("_Live2D"):
+                    base_char_code = char_code[: -len("_Live2D")]
+                    caption = voice_map.get(base_char_code, {}).get(voice_key, "")
 
-        voice_list.append({"id": motion_id, "voice_key": voice_key, "caption": caption})
+        voice_list.append({"id": motion_id, "char_code": char_code, "voice_key": voice_key, "caption": caption})
 
     with open(output_dir / "voice.json", "w", encoding="utf-8") as f:
         json.dump(voice_list, f, ensure_ascii=False, indent=4)

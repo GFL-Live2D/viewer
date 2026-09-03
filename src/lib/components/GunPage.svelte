@@ -41,6 +41,7 @@
         controller as storeController,
         uiState,
         viewerPreferences,
+        isCaptionDetached,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
 
@@ -71,6 +72,7 @@
     // UI visibility state: controls opacity of panels and speed dials.
     // Resolved server-side from ?ui=0 so SSR ships the hidden layout; no flash on hydration.
     let hideUI = $state(hideUIOnLoad);
+    let shouldApplyInitialCaptionMode = true;
 
     // Loading state during controller initialization (before loadCharacter starts)
     let isInitializing = $state(false);
@@ -150,6 +152,8 @@
 
     // Track window width for responsive positioning (SSR-safe)
     let isDesktopWidth = $state(false);
+    let hasSidePanelLayout = $state(false);
+    let viewportHeight = $state(0);
 
     // Mobile Info Accordion State (expanded by default)
     let mobileInfoAccordionValue = $state<string | undefined>('model-info');
@@ -158,6 +162,8 @@
         if (browser) {
             const updateWidth = () => {
                 isDesktopWidth = window.innerWidth >= 1800;
+                hasSidePanelLayout = window.innerWidth >= 768;
+                viewportHeight = window.innerHeight;
             };
             updateWidth();
             window.addEventListener('resize', updateWidth);
@@ -220,6 +226,10 @@
     let filteredVoiceData = $derived(
         $selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id]?.[$selectedVariant] : undefined,
     );
+    // Fallback source for idle-only damaged variants lacking their own voicelines.
+    let filteredNormalVoiceData = $derived(
+        $selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id]?.['normal'] : undefined,
+    );
 
     // Lifecycle: create controller when canvas is available
     $effect(() => {
@@ -227,13 +237,37 @@
             controller = new Live2DController(canvas);
 
             const prefs = untrack(() => $viewerPreferences);
-            controller.state.renderCaptionsOnCanvas = prefs.renderCaptionsOnCanvas;
+            controller.state.renderCaptionsOnCanvas = shouldApplyInitialCaptionMode
+                ? untrack(() => hideUI)
+                : prefs.renderCaptionsOnCanvas;
+            shouldApplyInitialCaptionMode = false;
             controller.state.followParameterValues = prefs.followParameterValues;
             controller.state.focusWeight = prefs.focusWeight;
             controller.state.isAlwaysFocus = prefs.isAlwaysFocus;
             controller.state.showHitboxDebug = prefs.showHitboxDebug;
             controller.state.useCustomInitialPositioning = prefs.useCustomInitialPositioning;
         }
+    });
+
+    // Keep canvas captions centered in the area not covered by visible side panels.
+    $effect(() => {
+        if (!controller) return;
+
+        let leftInset = 0;
+        let rightInset = 0;
+        let bottomInset = 0;
+
+        if (!hideUI) {
+            leftInset = hasSidePanelLayout && isLeftPanelOpen ? (isDesktopWidth ? 600 : 400) : 0;
+            rightInset = isDesktopWidth && isAllPanelsExpanded ? (isParametersPanelOpen ? 600 : 300) : 0;
+            bottomInset = !hasSidePanelLayout ? viewportHeight * (drawerHeight / 100) : 0;
+        }
+
+        controller.setCaptionInsets(leftInset, rightInset, bottomInset);
+    });
+
+    $effect(() => {
+        controller?.setCanvasCaptionSuppressed($isCaptionDetached);
     });
 
     $effect(() => {
@@ -595,6 +629,7 @@
                     variant={$selectedVariant}
                     motionData={filteredMotionData}
                     voiceData={filteredVoiceData}
+                    normalVoiceData={filteredNormalVoiceData}
                     {assetBaseUrl}
                     bind:controller
                     bind:canvas

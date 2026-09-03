@@ -36,6 +36,7 @@ export interface MotionData {
 }
 
 export interface VoiceData {
+    char_code: string;
     voice_key: string;
     caption: string;
 }
@@ -96,6 +97,7 @@ async function loadAllMotionData(): Promise<MotionData[]> {
 
 interface RawVoiceData {
     id: number;
+    char_code: string;
     voice_key: string;
     caption: string;
 }
@@ -104,15 +106,13 @@ async function loadAllVoiceData(): Promise<Record<number, VoiceData>> {
     const data = voiceData as RawVoiceData[];
     const cache: Record<number, VoiceData> = {};
 
-    // Voice data is now an array: [{ id, voice_key, caption }, ...]
-    if (Array.isArray(data)) {
-        for (const entry of data) {
-            if (entry.id) {
-                cache[entry.id] = {
-                    voice_key: entry.voice_key || '',
-                    caption: entry.caption || '',
-                };
-            }
+    for (const entry of data) {
+        if (entry.id) {
+            cache[entry.id] = {
+                char_code: entry.char_code || '',
+                voice_key: entry.voice_key || '',
+                caption: entry.caption || '',
+            };
         }
     }
     return cache;

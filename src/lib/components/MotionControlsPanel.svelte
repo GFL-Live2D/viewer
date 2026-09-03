@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { controller } from '$lib/stores/gun-page';
+    import { controller, isCaptionDetached } from '$lib/stores/gun-page';
     import MotionGrid from '$lib/components/MotionGrid.svelte';
     import DetachableCaption from '$lib/components/DetachableCaption.svelte';
     import Separator from '$lib/components/ui/separator/separator.svelte';
@@ -82,5 +82,6 @@
         showProgressBar={$controller?.state.showProgressBar ?? false}
         motionProgress={$controller?.state.motionProgress ?? 0}
         caption={$controller?.state.caption ?? null}
+        onDetachedChange={(detached) => isCaptionDetached.set(detached)}
     />
 </div>

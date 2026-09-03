@@ -7,10 +7,12 @@
         caption = null,
         showProgressBar = false,
         motionProgress = 0,
+        onDetachedChange,
     } = $props<{
         caption: string | null;
         showProgressBar: boolean;
         motionProgress: number;
+        onDetachedChange?: (isDetached: boolean) => void;
     }>();
 
     let isDetached = $state(false);
@@ -37,6 +39,7 @@
     });
 
     onDestroy(() => {
+        if (isDetached) onDetachedChange?.(false);
         if (typeof window !== 'undefined') {
             window.removeEventListener('pointerup', handleGlobalPointerUp);
             window.removeEventListener('pointermove', handleGlobalPointerMove);
@@ -108,10 +111,12 @@
         pos = { x: startX, y: startY };
         size = { width: startWidth, height: 'auto' };
         isDetached = true;
+        onDetachedChange?.(true);
     }
 
     function attach() {
         isDetached = false;
+        onDetachedChange?.(false);
     }
 
     // Portal action to move element to body

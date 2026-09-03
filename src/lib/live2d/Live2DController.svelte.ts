@@ -23,9 +23,11 @@ interface MotionData {
     touch_area: string;
     voice_string: string;
     delay: number;
+    is_hurt: number;
 }
 
 interface VoiceData {
+    char_code: string;
     voice_key: string;
     caption: string;
 }
@@ -97,6 +99,8 @@ export class Live2DController {
     private canvas: HTMLCanvasElement; // Store canvas reference
     private bgSprite: PIXI.Sprite | null = null; // Background sprite
     private captionText: PIXI.Text | null = null; // Caption text overlay
+    private captionInsets = { left: 0, right: 0, bottom: 0 };
+    private isCanvasCaptionSuppressed = false;
 
     // State (Using getters/setters effectively for reactivity if needed, or just public properties)
     // Reactive State (Svelte 5 Runes)
@@ -115,7 +119,7 @@ export class Live2DController {
         focusWeight: number;
         showHitboxDebug: boolean;
         loadedVoiceKeys: Set<string>;
-        groupAudioState: Record<string, boolean>; // Cache for UI: groupName -> isLoaded
+        groupAudioState: Record<string, boolean>; // Cache for UI: "groupName:index" -> isLoaded
         isMoveMode: boolean; // Move/drag mode toggle
         isAlwaysFocus: boolean; // Always-on focus tracking toggle
         parameters: Array<{
@@ -162,6 +166,7 @@ export class Live2DController {
     // Data Cache
     private motionMap: Record<number, MotionData> = {}; // MotionID -> Data
     private voiceMap: Record<number, VoiceData> = {}; // MotionID -> Voice Data
+    private normalVoiceMap: Record<number, VoiceData> = {}; // Fallback for idle-only damaged variants
     private currentCharacterCode: string = '';
     private currentVariant: string = '';
     private assetBaseUrl: string = '/assets';
@@ -238,6 +243,7 @@ export class Live2DController {
         this.captionText.anchor.set(0.5, 1);
         this.captionText.visible = false;
         this.app.stage.addChild(this.captionText);
+        this.updateCaptionLayout();
 
         // Initialize performance monitor
         if (typeof window !== 'undefined') {
@@ -277,12 +283,32 @@ export class Live2DController {
         if (newWidth !== this.app.renderer.width || newHeight !== this.app.renderer.height) {
             this.app.renderer.resize(newWidth, newHeight);
 
-            // Update caption text word wrap width
-            if (this.captionText) {
-                this.captionText.style.wordWrapWidth = newWidth * 0.8;
-            }
+            this.updateCaptionLayout();
         }
     };
+
+    private updateCaptionLayout() {
+        if (!this.captionText) return;
+
+        const availableWidth = Math.max(
+            0,
+            this.app.screen.width - this.captionInsets.left - this.captionInsets.right
+        );
+        this.captionText.style.wordWrapWidth = availableWidth * 0.8;
+        this.captionText.position.set(
+            this.captionInsets.left + availableWidth / 2,
+            this.app.screen.height - this.captionInsets.bottom - 40
+        );
+    }
+
+    public setCaptionInsets(left: number, right: number, bottom: number = 0) {
+        this.captionInsets = { left, right, bottom };
+        this.updateCaptionLayout();
+    }
+
+    public setCanvasCaptionSuppressed(suppressed: boolean) {
+        this.isCanvasCaptionSuppressed = suppressed;
+    }
 
     private startRendering() {
         this.app.ticker.add(() => {
@@ -300,13 +326,13 @@ export class Live2DController {
 
             // Update caption text overlay (use screen dimensions, not renderer which is supersampled)
             if (this.captionText) {
-                if (this.state.renderCaptionsOnCanvas && this.state.caption) {
+                if (
+                    this.state.renderCaptionsOnCanvas &&
+                    !this.isCanvasCaptionSuppressed &&
+                    this.state.caption
+                ) {
                     // Replace <> with space for canvas display (UI box uses newline instead)
                     this.captionText.text = this.state.caption.replace(/<>/g, ' ');
-                    this.captionText.position.set(
-                        this.app.screen.width / 2,
-                        this.app.screen.height - 40
-                    );
                     this.captionText.visible = true;
                 } else {
                     this.captionText.visible = false;
@@ -342,6 +368,7 @@ export class Live2DController {
         voiceData?: any,
         shouldResetZoom: boolean = true,
         assetBaseUrl: string = '/assets',
+        normalVoiceData?: any,
     ): Promise<boolean> {
         // Increment load ID to invalidate previous pending loads
         const myLoadId = ++this.loadId;
@@ -474,7 +501,7 @@ export class Live2DController {
             await Promise.all([
                 this.extractMotionDurationsFromModel(), // Uses this.model
                 this.loadMotionData(entry, motionData),
-                this.loadVoiceData(String(entry.id), voiceData),
+                this.loadVoiceData(String(entry.id), voiceData, normalVoiceData),
             ]);
 
             // Preload all voice lines in background
@@ -708,7 +735,7 @@ export class Live2DController {
         // console.log('[Controller] File -> MotionID map:', Object.keys(this.fileToMotionId).slice(0, 10));
     }
 
-    private async loadVoiceData(modelId: string, voiceData?: any) {
+    private async loadVoiceData(modelId: string, voiceData?: any, normalVoiceData?: any) {
         if (!voiceData) {
             throw new Error('Voice data not provided by server for model ' + modelId);
         }
@@ -720,6 +747,7 @@ export class Live2DController {
         }
 
         this.voiceMap = voiceData;
+        this.normalVoiceMap = typeof normalVoiceData === 'object' && normalVoiceData ? normalVoiceData : {};
     }
 
     // -- Background Management --
@@ -770,6 +798,35 @@ export class Live2DController {
 
         this.bgSprite.position.set(centerX + x, centerY + y);
         this.bgSprite.scale.set(scale);
+    }
+
+    // -- Repeat Parameters --
+
+    // moc3 "repeat" params should wrap at min/max instead of clamping; the library doesn't apply this.
+    private setupRepeatParameters(model: Live2DModel) {
+        const coreModel = (model.internalModel as unknown as ExtendedInternalModel).coreModel;
+        const params = coreModel?.parameters;
+        if (!params?.repeats) return;
+
+        const repeatIndices: number[] = [];
+        for (let i = 0; i < params.count; i++) {
+            if (params.repeats[i]) repeatIndices.push(i);
+        }
+        if (repeatIndices.length === 0) return;
+
+        (model.internalModel as unknown as ExtendedInternalModel).on('afterMotionUpdate', () => {
+            for (const i of repeatIndices) {
+                const min = params.minimumValues[i];
+                const max = params.maximumValues[i];
+                const range = max - min;
+                if (range <= 0) continue;
+
+                const value = params.values[i];
+                if (value < min || value > max) {
+                    params.values[i] = ((((value - min) % range) + range) % range) + min;
+                }
+            }
+        });
     }
 
     // -- Interaction --
@@ -831,6 +888,8 @@ export class Live2DController {
             this.motionStartTime = Date.now();
             this.handleTap(hitAreas);
         });
+
+        this.setupRepeatParameters(model);
 
         (model.internalModel as unknown as ExtendedInternalModel).on('afterMotionUpdate', () => {
             if (!this.state.showProgressBar || !this.motionStartTime) return;
@@ -907,6 +966,32 @@ export class Live2DController {
         }
     }
 
+    // model3.json group names (TapHead/TapBody/etc) don't reliably match their touch_area,
+    // so resolve hit areas via STC's own touch_area and is_hurt fields instead.
+    private findGroupsForHitArea(area: string): string[] {
+        const model = this.model;
+        if (!model) return [];
+
+        const definitions = model.internalModel.motionManager.definitions as Record<string, any[]>;
+        const isHurtVariant = this.currentVariant !== 'normal';
+
+        const matchingFiles = new Set(
+            Object.values(this.motionMap)
+                .filter((m) => m.touch_area === area && Boolean(m.is_hurt) === isHurtVariant)
+                .map((m) => (m.motion_name.split('/').pop() || '').replace('.mtn', '.motion3.json'))
+        );
+        if (matchingFiles.size === 0) return [];
+
+        const groups: string[] = [];
+        for (const [groupName, defs] of Object.entries(definitions)) {
+            const groupFiles = defs.map((def) => (def.File.split('/').pop() || ''));
+            if (groupFiles.some((f) => matchingFiles.has(f))) {
+                groups.push(groupName);
+            }
+        }
+        return groups;
+    }
+
     private handleTap(hitAreas: string[]) {
         if (hitAreas.length === 0) return;
         const model = this.model;
@@ -935,21 +1020,21 @@ export class Live2DController {
         const groupWeights: Record<string, number> = {};
 
         for (const area of hitAreas) {
-            const groupName = `Tap${area.charAt(0).toUpperCase() + area.slice(1)}`;
-            const definitions = (model.internalModel.motionManager.definitions as any)[groupName];
+            const groupNamesForArea = this.findGroupsForHitArea(area);
 
-            if (!definitions || definitions.length === 0) continue;
+            for (const groupName of groupNamesForArea) {
+                const definitions = (model.internalModel.motionManager.definitions as any)[groupName];
+                if (!definitions || definitions.length === 0) continue;
 
-            // Calculate average weight for this group
-            const weights = definitions.map((def: any) => {
-                const meta = this.findMotionMetadata(def.File);
-                return meta?.probability ?? 1.0;
-            });
-            const avgWeight = weights.reduce((a: number, b: number) => a + b, 0) / weights.length;
-            groupWeights[groupName] = avgWeight;
+                // Calculate average weight for this group
+                const weights = definitions.map((def: any) => {
+                    const meta = this.findMotionMetadata(def.File);
+                    return meta?.probability ?? 1.0;
+                });
+                const avgWeight = weights.reduce((a: number, b: number) => a + b, 0) / weights.length;
+                groupWeights[groupName] = avgWeight;
+            }
         }
-
-        // console.log('[Controller] Group weights:', groupWeights);
 
         // Select group based on combined weights
         const groupNames = Object.keys(groupWeights);
@@ -1007,10 +1092,10 @@ export class Live2DController {
             // Find motion ID from File path
             let motionId = this.findMotionId(def.File);
 
-            if (motionId !== undefined && this.voiceMap[motionId]) {
+            if (motionId !== undefined && this.voiceMap[motionId]?.voice_key) {
                 const voice = this.voiceMap[motionId];
                 this.state.caption = voice.caption;
-                audioUrl = this.getAudioUrl(voice.voice_key);
+                audioUrl = this.getAudioUrl(voice.char_code, voice.voice_key);
             } else {
                 this.state.caption = null;
             }
@@ -1076,10 +1161,9 @@ export class Live2DController {
 
     // -- Audio Handling --
 
-    private getAudioUrl(voiceKey: string): string {
-        // Extract base character ID: G41_2401 -> G41 (or G41MOD_2401 -> G41MOD)
-        // Keep MOD suffix if present; fallback logic handles base variant if needed
-        const baseId = this.currentCharacterCode.split('_')[0].toUpperCase();
+    private getAudioUrl(charCode: string, voiceKey: string): string {
+        // charCode is STC's own voice bank id, which can differ from the skin code (e.g. HK416_0).
+        const baseId = (charCode || this.currentCharacterCode.split('_')[0]).toUpperCase();
 
         return `${this.assetBaseUrl}/audio/${baseId}/${baseId}_${voiceKey}_JP.ogg`;
     }
@@ -1155,7 +1239,7 @@ export class Live2DController {
 
         for (const voice of Object.values(this.voiceMap)) {
             if (voice.voice_key) {
-                const url = this.getAudioUrl(voice.voice_key);
+                const url = this.getAudioUrl(voice.char_code, voice.voice_key);
                 // We just trigger the load, we don't await individual ones here unless we want to track progress
 
                 // Track promise completion to update UI state
@@ -1182,27 +1266,24 @@ export class Live2DController {
     }
 
     private updateGroupAudioState(loadedKey: string) {
-        // Reverse lookup required: iterate groups to find which use this voice key
-        // Optimization possible: build VoiceKey -> GroupNames[] map during loadCharacter
-        // Or just re-evaluate all groups that are not yet loaded.
-        // For 60fps UI, we want a simple map lookup.
+        // Keyed per group+index since each motion variant is its own button in the grid.
+        const model = this.model;
+        if (!model) return;
 
-        // Let's iterate all groups and if they map to this voice key, marking them true.
-        // Optimization: In `loadCharacter` we could build a map: VoiceKey -> GroupNames[]
-
-        // Simple approach: Iterate all groups.
         for (const group of this.motionGroups) {
-            if (this.state.groupAudioState[group]) continue; // Already loaded
-
-            // Check if group's primary motion (0) uses this key
-            const model = this.model;
-            if (!model) continue;
-
             const defs = (model.internalModel.motionManager.definitions as any)[group];
-            if (defs && defs[0] && defs[0].File) {
-                const motionId = this.findMotionId(defs[0].File);
-                if (motionId && this.voiceMap[motionId] && this.voiceMap[motionId].voice_key === loadedKey) {
-                    this.state.groupAudioState[group] = true;
+            if (!defs) continue;
+
+            for (let index = 0; index < defs.length; index++) {
+                const key = `${group}:${index}`;
+                if (this.state.groupAudioState[key]) continue; // Already loaded
+
+                const file = defs[index]?.File;
+                if (!file) continue;
+
+                const motionId = this.findMotionId(file);
+                if (motionId && this.voiceMap[motionId]?.voice_key === loadedKey) {
+                    this.state.groupAudioState[key] = true;
                 }
             }
         }
@@ -1216,7 +1297,7 @@ export class Live2DController {
         }
 
         try {
-            const url = this.getAudioUrl(voiceKey);
+            const url = this.getAudioUrl('', voiceKey);
             const blobUrl = await this.loadAudio(url);
 
             if (this.currentAudio) {
@@ -1250,6 +1331,7 @@ export class Live2DController {
             this.currentAudio.pause();
             this.currentAudio = null;
         }
+        this.model?.stopSpeaking();
     }
 
     async playAudioOnly(motionId: number) {
@@ -1258,28 +1340,35 @@ export class Live2DController {
             return;
         }
 
-        const voice = this.voiceMap[motionId];
+        const voice = this.voiceMap[motionId] || this.normalVoiceMap[motionId];
         if (!voice || !voice.voice_key) {
             console.warn('[Controller] No voice data for motion', motionId);
             return;
         }
 
+        const model = this.model;
+        if (!model) return;
+
         try {
-            const url = this.getAudioUrl(voice.voice_key);
+            const url = this.getAudioUrl(voice.char_code, voice.voice_key);
             const blobUrl = await this.loadAudio(url);
 
             this.stopAudio();
 
-            const audio = new Audio(blobUrl);
-            this.currentAudio = audio;
-
-            // Wait for metadata to get duration
-            await new Promise<void>((resolve) => {
-                audio.addEventListener('loadedmetadata', () => resolve(), { once: true });
-                audio.load();
+            // Use the library's own speak() so it drives lipsync through its analyser,
+            // rather than a plain HTMLAudioElement the library's update loop doesn't see.
+            const played = await model.speak(blobUrl, {
+                volume: 0.5,
+                onFinish: () => this.stopAudioProgress(),
+                onError: (err: Error) => {
+                    console.error('[Controller] Audio playback error:', err);
+                    this.stopAudioProgress();
+                }
             });
 
-            const audioDuration = audio.duration;
+            if (!played) return;
+
+            const audioDuration = (model.internalModel?.motionManager as any)?.currentAudio?.duration ?? 0;
 
             // Set up progress tracking
             this.state.showProgressBar = true;
@@ -1295,32 +1384,20 @@ export class Live2DController {
 
             // Update progress every 100ms
             this.audioProgressInterval = window.setInterval(() => {
-                if (!this.currentAudio || this.currentAudio.paused || this.currentAudio.ended) {
+                const audio = (model.internalModel?.motionManager as any)?.currentAudio;
+                if (!audio || !audio.isPlaying) {
                     this.stopAudioProgress();
                     return;
                 }
 
                 const elapsed = Date.now() - this.motionStartTime;
-                const progress = Math.min(elapsed / (audioDuration * 1000), 1);
+                const progress = audioDuration > 0 ? Math.min(elapsed / (audioDuration * 1000), 1) : 0;
                 this.state.motionProgress = progress;
 
                 if (progress >= 1) {
                     this.stopAudioProgress();
                 }
             }, 100);
-
-            // Handle audio end
-            audio.addEventListener('ended', () => {
-                this.stopAudioProgress();
-            }, { once: true });
-
-            audio.addEventListener('error', (err) => {
-                console.error('[Controller] Audio playback error:', err);
-                this.stopAudioProgress();
-            }, { once: true });
-
-            audio.volume = 0.5;
-            await audio.play();
 
         } catch (err) {
             console.error('[Controller] Failed to play audio-only:', err);
@@ -1332,6 +1409,10 @@ export class Live2DController {
         if (this.audioProgressInterval !== null) {
             clearInterval(this.audioProgressInterval);
             this.audioProgressInterval = null;
+        }
+        const motionManager = this.model?.internalModel?.motionManager as any;
+        if (motionManager) {
+            motionManager.currentAudio = null;
         }
         this.state.showProgressBar = false;
         this.state.isMotionPlaying = false;
@@ -1367,6 +1448,23 @@ export class Live2DController {
             }
         }
 
+        // Idle-only damaged variants lack reliable touch-reaction voice data in STC, so borrow normal's.
+        const isIdleOnly = this.motionGroups.length === 0 ||
+            (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
+        if (unmappedMap.size === 0 && isIdleOnly && this.currentVariant !== 'normal') {
+            for (const [motionIdStr, voice] of Object.entries(this.normalVoiceMap)) {
+                const motionId = Number(motionIdStr);
+                if (!voice || !voice.voice_key) continue;
+                if (!unmappedMap.has(voice.voice_key)) {
+                    unmappedMap.set(voice.voice_key, {
+                        motionId,
+                        voice_key: voice.voice_key,
+                        caption: voice.caption || voice.voice_key
+                    });
+                }
+            }
+        }
+
         return Array.from(unmappedMap.values());
     }
 
@@ -1397,14 +1495,34 @@ export class Live2DController {
 
     getMotionVariants(groupName: string): Array<{ index: number; label: string }> {
         const count = this.getMotionCountForGroup(groupName);
+        const definitions = (this.model?.internalModel.motionManager.definitions as any)?.[groupName];
         const variants = [];
         for (let i = 0; i < count; i++) {
             variants.push({
                 index: i,
-                label: `${groupName} ${count > 1 ? i + 1 : ''}`,
+                label: this.getMotionLabel(groupName, i, definitions?.[i]?.File),
             });
         }
         return variants;
+    }
+
+    // model3.json group names don't reliably match their touch_area content, so label from STC instead.
+    private getMotionLabel(groupName: string, index: number, file: string | undefined): string {
+        const fallback = `${groupName} ${this.getMotionCountForGroup(groupName) > 1 ? index + 1 : ''}`;
+        if (!file) return fallback;
+
+        const meta = this.findMotionMetadata(file);
+        if (!meta || !meta.touch_area || meta.touch_area === '0') return fallback;
+
+        const area = meta.touch_area.charAt(0).toUpperCase() + meta.touch_area.slice(1);
+        const sameAreaCount = Object.values(this.motionMap).filter(
+            (m) => m.touch_area === meta.touch_area && Boolean(m.is_hurt) === Boolean(meta.is_hurt)
+        ).length;
+        const sameAreaIndex = Object.values(this.motionMap)
+            .filter((m) => m.touch_area === meta.touch_area && Boolean(m.is_hurt) === Boolean(meta.is_hurt))
+            .findIndex((m) => m.id === meta.id);
+
+        return `${area} ${sameAreaCount > 1 ? sameAreaIndex + 1 : ''}`;
     }
 
     private getMotionDuration(groupName: string, index: number): number {
@@ -1435,10 +1553,10 @@ export class Live2DController {
         const motionId = this.findMotionId(def.File);
         let audioUrl: string | undefined;
 
-        if (motionId !== undefined && this.voiceMap[motionId]) {
+        if (motionId !== undefined && this.voiceMap[motionId]?.voice_key) {
             const voice = this.voiceMap[motionId];
             this.state.caption = voice.caption;
-            audioUrl = this.getAudioUrl(voice.voice_key);
+            audioUrl = this.getAudioUrl(voice.char_code, voice.voice_key);
         } else {
             this.state.caption = null;
         }

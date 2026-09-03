@@ -18,7 +18,7 @@
                     controller.state.currentMotionIndex === variant.index &&
                     controller.state.isMotionPlaying
                         ? 'border-accent bg-accent text-white shadow-lg'
-                        : controller.state.groupAudioState?.[group]
+                        : controller.state.groupAudioState?.[`${group}:${variant.index}`]
                           ? 'bg-accent/10 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground'
                           : 'bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground'}"
                     title={variant.label}
