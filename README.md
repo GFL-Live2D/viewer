@@ -1,6 +1,6 @@
 # GFL Live2D Viewer
 
-Browser-based Live2D model viewer for Girls' Frontline. Built with SvelteKit 5, PixiJS 7, and [pixi-live2d-display-advanced](https://github.com/Untitled-Story/pixi-live2d-display-advanced).
+Browser-based Live2D model viewer for Girls' Frontline. Built with SvelteKit 5, PixiJS 8, and [untitled-pixi-live2d-engine](https://github.com/Untitled-Story/untitled-pixi-live2d-engine).
 
 This app is currently in beta. Assets are not included in this repository. You supply your own.
 
@@ -24,6 +24,9 @@ bun run dev
 ```
 
 Open <http://localhost:5173>.
+
+Clone with `--recurse-submodules`, or run `git submodule update --init` if you already cloned.
+The `gfl-data-miner-python` submodule is only needed for the extraction scripts, not to run the viewer.
 
 > Nothing in the codebase is bun-specific, so `pnpm`/`npm`/`yarn` should work too.
 
@@ -106,7 +109,21 @@ The viewer ships with pre-extracted JSON metadata under `src/lib/data/`:
 
 ### Regenerating data from game files
 
-Extraction scripts live in `scripts/`. They require a full Unity `Assets/` tree from GFL (drop it in at project root or symlink it) and Python 3.9+ with `uv`.
+Extraction scripts live in `scripts/`. They require a full Unity `Assets/` tree from GFL (drop it in at project root or symlink it) and Python 3.10+ with `uv`.
+
+`extract_live2d.py` and `extract_voice_map.py` read STC tables through the `gfl-data-miner-python` submodule, so
+initialise it first (`git submodule update --init`). Only its `utils/format_stc.py` is used and that is pure stdlib,
+so the submodule's own `requirements.txt` does not need installing.
+
+`extract_all_audio.py` uses [vgmstream](https://vgmstream.org/) to decode `.acb.bytes` voice banks.
+Install the CLI and make sure `vgmstream-cli` is on `PATH`:
+
+```bash
+winget install vgmstream.vgmstream   # Windows
+brew install vgmstream               # macOS
+```
+
+Other platforms: grab a build from [the releases page](https://github.com/vgmstream/vgmstream/releases).
 
 ```bash
 uv run scripts/extract_live2d.py        # live2d.json
@@ -121,11 +138,11 @@ uv run scripts/convert_unity_live2d.py  # converting Unity Live2D exports into C
 
 ## Using the Controller Standalone
 
-`src/lib/live2d/Live2DController.svelte.ts` is a self-contained class that manages a PixiJS application and a
-`pixi-live2d-display-advanced` model. It has no dependency on SvelteKit or the viewer UI.
+`src/lib/live2d/Live2DController.svelte.ts` is a self-contained class that manages a PixiJS application and an
+`untitled-pixi-live2d-engine` model. It has no dependency on SvelteKit or the viewer UI.
 To use it elsewhere: create a `<canvas>`, instantiate `Live2DController`, call `loadCharacter(entry, variant, motionData, voiceData, true, assetBaseUrl)`, then drive it through its public methods (`playMotion`, `setZoom`, `setFocusPoint`, etc.).
 Per-model render tweaks are read from `src/lib/data/live2d-overrides.json`, inline that data or pass your own.
-The only runtime dependency besides PixiJS and `pixi-live2d-display-advanced` is the zoom spring;
+The only runtime dependency besides PixiJS and `untitled-pixi-live2d-engine` is the zoom spring;
 replace it with any interpolation if you are outside this project.
 
 ## Licence
