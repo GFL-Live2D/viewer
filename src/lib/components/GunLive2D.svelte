@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Live2DController, ModelLoadingState, ZOOM_MIN, ZOOM_MAX } from '$lib/live2d/Live2DController.svelte';
+    import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
 
     // Props (runes mode)
     let {
@@ -182,7 +183,7 @@
 
 <!-- Loading Overlay -->
 {#if controller?.state.loading === ModelLoadingState.LOADING || isInitializing}
-    <div class="bg-background/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+    <CanvasOverlay>
         <div class="text-center">
             <img src="/gfloading.gif" class="mx-auto mb-4 h-24 w-24" />
             <p class="text-foreground-secondary font-medium">{characterEntry?.code}</p>
@@ -192,12 +193,12 @@
                 <p class="text-foreground-tertiary mt-2 text-sm">{controller.state.loadingStep}</p>
             {/if}
         </div>
-    </div>
+    </CanvasOverlay>
 {/if}
 
 <!-- Error Overlay -->
 {#if controller?.state.loading === ModelLoadingState.ERROR}
-    <div class="bg-background pointer-events-auto fixed inset-0 z-50 flex items-center justify-center">
+    <CanvasOverlay bg="bg-background" pointerEvents="pointer-events-auto">
         <div class="max-w-md text-center">
             <h2 class="mb-2 text-2xl font-bold text-red-400">Error</h2>
             <p class="text-foreground-tertiary mb-6 text-sm">{controller.state.error}</p>
@@ -205,5 +206,5 @@
                 >Retry</button
             >
         </div>
-    </div>
+    </CanvasOverlay>
 {/if}

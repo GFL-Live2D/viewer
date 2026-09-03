@@ -49,7 +49,7 @@
 </script>
 
 <!-- Header Info with refined styling -->
-<div class="group relative flex flex-col overflow-hidden select-text">
+<div class="group @container relative flex flex-col overflow-hidden select-text">
     <!-- Main content -->
     <div class="relative flex-1 px-4 pt-4 md:pb-4 2xl:p-6">
         <!-- Title and metadata -->
@@ -58,18 +58,20 @@
             <div class="flex items-start gap-0">
                 <!-- Title (Center area, wraps) -->
                 <h2
-                    class="text-foreground flex min-w-0 flex-1 flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight"
+                    class="text-foreground flex min-w-0 flex-1 flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight @max-sm:gap-2 @max-sm:text-lg @max-xs:text-base"
                 >
-                    <GunNameDisplay
-                        name={selectedModelName || $selectedCharacterEntry?.code || $selectedModel || 'Select Model'}
-                        iconSize="h-6 w-6 ml-1"
-                        iconColor="#F05A1C"
-                    />
+                    <span class="min-w-0">
+                        <GunNameDisplay
+                            name={selectedModelName || $selectedCharacterEntry?.code || $selectedModel || 'Select Model'}
+                            iconSize="h-6 w-6 ml-1"
+                            iconColor="#F05A1C"
+                        />
+                    </span>
 
                     <!-- Copy Link Button (Inline with title, centered vertically) -->
                     <button
                         onclick={handleCopyLink}
-                        class="text-foreground-tertiary hover:text-foreground 2xl:bg-background-secondary/50 2xl:hover:bg-background-tertiary flex h-8 w-8 flex-shrink-0 items-center justify-center self-center rounded-lg transition-all duration-200 active:scale-95 2xl:opacity-0 2xl:group-hover:opacity-100"
+                        class="text-foreground-tertiary hover:text-foreground bg-background-secondary/50 hover:bg-background-tertiary flex h-8 w-8 flex-shrink-0 items-center justify-center self-center rounded-lg transition-all duration-200 active:scale-95"
                         title="Copy direct link"
                         aria-label="Copy direct link"
                     >
@@ -96,12 +98,14 @@
             <!-- Metadata section -->
             <div class="text-md space-y-2.5">
                 {#if $selectedCharacterEntry?.costumeName}
-                    <div class="text-accent flex gap-3">
+                    <div class="text-accent flex min-w-0 gap-3">
                         <div
                             class="my-0.5 w-0.5 shrink-0 self-stretch"
                             style="background: linear-gradient(to bottom, var(--color-accent-secondary), var(--color-accent));"
                         ></div>
-                        <span class="py-0.5 leading-tight font-bold">{$selectedCharacterEntry.costumeName}</span>
+                        <span class="min-w-0 py-0.5 text-lg leading-tight font-bold @max-sm:text-base @max-xs:text-sm"
+                            >{$selectedCharacterEntry.costumeName}</span
+                        >
                     </div>
                 {/if}
                 <div class="text-foreground-secondary flex gap-3">

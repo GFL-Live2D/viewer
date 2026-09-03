@@ -5,6 +5,7 @@
 
     import MorphingChevron from '$lib/components/MorphingChevron.svelte';
     import GunLive2D from '$lib/components/GunLive2D.svelte';
+    import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
     import BackgroundManager from '$lib/components/BackgroundManager.svelte';
     import ViewportControls from '$lib/components/ViewportControls.svelte';
     import PanelControls from '$lib/components/PanelControls.svelte';
@@ -605,12 +606,12 @@
 
         <!-- Initial Loading GIF (before model selection) -->
         {#if !$selectedCharacterEntry}
-            <div class="bg-background/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+            <CanvasOverlay>
                 <div class="text-center">
                     <img src="/gfloading.gif" alt="Loading..." class="mx-auto mb-4 h-24 w-24" />
                     <p class="text-foreground-secondary font-medium">Select a model to begin</p>
                 </div>
-            </div>
+            </CanvasOverlay>
         {/if}
     </div>
 

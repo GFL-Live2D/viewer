@@ -1,7 +1,18 @@
 import { getGunModelIndex, getAliases, getModelMotionAndVoiceData, getGunModelVariants } from '$lib/server/live2d';
 import { env } from '$env/dynamic/public';
+import { existsSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+
+function assetsConfigured(): boolean {
+    if (env.PUBLIC_ASSET_BASE_URL) return true;
+
+    const assetsDir = path.resolve('static/assets');
+    return existsSync(assetsDir) && readdirSync(assetsDir).length > 0;
+}
 
 export async function loadGunData() {
+    if (!assetsConfigured()) return { assetsMissing: true };
+
     const [models, aliases] = await Promise.all([getGunModelIndex(), getAliases()]);
 
     // Collect all unique motion IDs from all models to hydrate motion/voice data
@@ -68,6 +79,7 @@ export async function loadGunData() {
     }
 
     return {
+        assetsMissing: false,
         models,
         aliases,
         motionData: motionDataByModel,
