@@ -1886,8 +1886,13 @@ export class Live2DController {
                     fitScale *= manualOverride.scale;
                 }
 
-                // CanvasOrigin centering aligns model's defined origin with screen center (not geometric center)
-                if (typeof originX === 'number' && typeof originY === 'number') {
+                // Aligns the model's declared origin with screen center rather than its geometric center.
+                // "origin": false opts out, so a y offset tunes from a stable baseline instead.
+                if (
+                    manualOverride?.origin !== false &&
+                    typeof originX === 'number' &&
+                    typeof originY === 'number'
+                ) {
                     const offsetX = (width / 2 - originX) / 2;
                     let offsetY = (height / 2 - originY) / 2;
 

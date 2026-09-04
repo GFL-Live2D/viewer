@@ -24,5 +24,13 @@
     },
     "Saiga12_5402": {
         "destroy": { "y": 300 }
+    },
+    "UMP45_584": {
+        "normal": { "origin": false },
+        "destroy": { "origin": false }
+    },
+    "UMP45Mod_584": {
+        "normal": { "origin": false },
+        "destroy": { "origin": false }
     }
 }

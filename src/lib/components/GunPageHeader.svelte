@@ -174,7 +174,7 @@
                                         <Copy class="h-3.5 w-3.5" />
                                     {/if}
                                 </button>
-                                <pre class="overflow-x-auto pr-8 text-xs"><code>{embedSnippet}</code></pre>
+                                <pre class="pr-8 text-xs break-words whitespace-pre-wrap"><code>{embedSnippet}</code></pre>
                             </div>
                         </Accordion.Content>
                     </Accordion.Item>

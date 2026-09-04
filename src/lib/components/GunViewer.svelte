@@ -60,6 +60,7 @@
             voiceData={voiceData[variant]}
             normalVoiceData={voiceData['normal']}
             {assetBaseUrl}
+            overlayInsets={{ left: 0, right: 0, bottom: 0 }}
             displayOnly={true}
             bind:controller
             bind:canvas
