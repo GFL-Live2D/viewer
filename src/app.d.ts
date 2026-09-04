@@ -1,5 +1,10 @@
 declare global {
-    namespace App {}
+    namespace App {
+        interface Locals {
+            subdomain: string;
+            subdomainMode: boolean;
+        }
+    }
 }
 
 declare module 'stats.js' {

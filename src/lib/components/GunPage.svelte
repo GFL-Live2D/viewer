@@ -46,8 +46,11 @@
         viewerPreferences,
         isCaptionDetached,
         preferredVariantKind,
+        subdomainMode as storeSubdomainMode,
+        subdomain as storeSubdomain,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
+    import { buildShareLink } from '$lib/shareLinks';
 
     let {
         models,
@@ -58,6 +61,9 @@
         variantsByModel: variantsByModelProp,
         assetBaseUrl,
         hideUIOnLoad = false,
+        subdomainMode = false,
+        subdomain = '',
+        subdomainModel = null,
     } = $props<{
         models: Live2DModelIndex[];
         aliases: Record<string, string>;
@@ -67,6 +73,9 @@
         variantsByModel: Record<string, string[]>;
         assetBaseUrl: string;
         hideUIOnLoad?: boolean;
+        subdomainMode?: boolean;
+        subdomain?: string;
+        subdomainModel?: Live2DModelIndex | null;
     }>();
 
     // Derived from uiState store for local access
@@ -118,6 +127,12 @@
     });
 
     // State synced with store (selectedModel, selectedVariant, etc. imported from store)
+
+    // Panels build their own share links, so the routing mode has to reach them
+    $effect(() => {
+        storeSubdomainMode.set(subdomainMode);
+        storeSubdomain.set(subdomain);
+    });
 
     // Initialize model names and variants in store from props
     $effect(() => {
@@ -396,12 +411,19 @@
     }
 
     function handleCopyLink() {
-        const params = buildModelParams();
-        if (!params) return;
+        const entry = $selectedCharacterEntry;
+        if (!entry) return;
 
-        const origin = `${window.location.protocol}//${window.location.host}`;
+        const link = buildShareLink(entry, {
+            protocol: window.location.protocol,
+            host: window.location.host,
+            subdomainMode,
+            subdomain,
+            variant: currentDisplayVariant,
+            hideUI,
+        });
 
-        navigator.clipboard.writeText(`${origin}/?${params.toString()}`);
+        navigator.clipboard.writeText(link);
         isCopied = true;
         setTimeout(() => (isCopied = false), 2000);
     }
@@ -511,7 +533,7 @@
     });
 
     $effect(() => {
-        // Init: resolve model+variant from ?model=&variant= query, else fall back to random
+        // Init: resolve model+variant from ?model=&variant= query, then the subdomain, else random
         if (models.length > 0 && !$selectedModel) {
             let initialModel: Live2DModelIndex | undefined;
             let queryVariant = '';
@@ -523,6 +545,10 @@
                     initialModel = findModelByQuery(modelQuery);
                 }
                 queryVariant = getInternalVariant(params.get('variant') ?? '');
+            }
+
+            if (!initialModel && subdomainModel) {
+                initialModel = models.find((m: Live2DModelIndex) => m.id === subdomainModel.id);
             }
 
             if (!initialModel) {
@@ -576,7 +602,8 @@
     afterNavigate(() => (routerReady = true));
 
     $effect(() => {
-        if (!routerReady || !$selectedModel) return;
+        // In subdomain mode the hostname carries the model, so the query stays as the visitor left it
+        if (!routerReady || subdomainMode || !$selectedModel) return;
 
         const params = buildModelParams();
         if (!params) return;

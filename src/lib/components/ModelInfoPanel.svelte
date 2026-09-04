@@ -5,7 +5,10 @@
         selectedVariant,
         modelNames,
         variantsByModel,
+        subdomainMode,
+        subdomain,
     } from '$lib/stores/gun-page';
+    import { buildShareLink } from '$lib/shareLinks';
     import GunNameDisplay from '$lib/components/GunNameDisplay.svelte';
     import { Check, Link, ArrowLeftRight } from '@lucide/svelte';
     import fitty, { type FittyInstance } from 'fitty';
@@ -36,14 +39,17 @@
         const entry = $selectedCharacterEntry;
         if (!entry) return;
 
-        const origin = `${window.location.protocol}//${window.location.host}`;
-        const params = new URLSearchParams({ model: entry.code.toLowerCase() });
-        if (currentDisplayVariant && currentDisplayVariant !== 'normal') {
-            params.set('variant', currentDisplayVariant);
-        }
+        const link = buildShareLink(entry, {
+            protocol: window.location.protocol,
+            host: window.location.host,
+            subdomainMode: $subdomainMode,
+            subdomain: $subdomain,
+            variant: currentDisplayVariant,
+            hideUI: false,
+        });
 
         try {
-            await navigator.clipboard.writeText(`${origin}/?${params.toString()}`);
+            await navigator.clipboard.writeText(link);
             isCopied = true;
             clearTimeout(copiedTimeout);
             copiedTimeout = setTimeout(() => {

@@ -19,6 +19,10 @@ export const filteredModels = writable<any[]>([]);
 export const modelNames = writable<Record<string, string>>({});
 export const variantsByModel = writable<Record<string, string[]>>({});
 
+// Hostname carries the model, so share links are built as subdomains
+export const subdomainMode = writable<boolean>(false);
+export const subdomain = writable<string>('');
+
 // UI filters and preferences
 export const searchQuery = writable<string>('');
 export const sortBy = writable<'gun' | 'id' | 'name'>('gun');

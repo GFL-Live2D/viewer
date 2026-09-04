@@ -1,25 +1,37 @@
 <script lang="ts">
     import * as Accordion from '$lib/components/ui/accordion';
-    import { selectedCharacterEntry, selectedVariant } from '$lib/stores/gun-page';
+    import {
+        selectedCharacterEntry,
+        selectedVariant,
+        subdomainMode,
+        subdomain,
+    } from '$lib/stores/gun-page';
+    import { apexHost as toApexHost, buildShareLink } from '$lib/shareLinks';
+    import type { Live2DModelIndex } from '$lib/server/live2d';
     import { Check, Copy, ImageDown, MousePointerClick } from '@lucide/svelte';
 
     let { baseHost } = $props<{
         baseHost: string;
     }>();
 
+    let apexHost = $derived(toApexHost(baseHost, $subdomain));
+
     let copied = $state(false);
     let copyTimeout: ReturnType<typeof setTimeout> | undefined;
 
+    // Falls back to a sample model so the snippet reads sensibly before a selection
     let embedUrl = $derived.by(() => {
-        const model = $selectedCharacterEntry?.code.toLowerCase() ?? 'pa-15';
-        const params = new URLSearchParams({ model });
+        const entry = $selectedCharacterEntry ?? { code: 'pa-15' };
         const v = ($selectedVariant ?? '').toLowerCase();
-        const displayVariant = v === 'destroy' ? 'damaged' : v;
-        if (displayVariant && displayVariant !== 'normal') {
-            params.set('variant', displayVariant);
-        }
-        params.set('ui', '0');
-        return `https://${baseHost}/?${params.toString()}`;
+
+        return buildShareLink(entry as Live2DModelIndex, {
+            protocol: 'https:',
+            host: baseHost,
+            subdomainMode: $subdomainMode,
+            subdomain: $subdomain,
+            variant: v === 'destroy' ? 'damaged' : v,
+            hideUI: true,
+        });
     });
 
     let embedSnippet = $derived(
@@ -81,20 +93,37 @@
                 </Accordion.Trigger>
                 <Accordion.Content class="text-foreground-tertiary pt-2 pb-0 text-sm">
                     <p class="mb-2">
-                        Access models directly by URL query using the following.
+                        {$subdomainMode
+                            ? 'Access models directly by subdomain using the following.'
+                            : 'Access models directly by URL query using the following.'}
                     </p>
-                    <ul class="list-inside list-disc space-y-1">
-                        <li>Gun name: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa-15</code></li>
-                        <li>
-                            Costume code: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa15_5802</code>
-                        </li>
-                        <li>
-                            With variant: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa-15&variant=damaged</code>
-                        </li>
-                        <li>
-                            Hide UI on load: append <code class="bg-background-tertiary rounded px-1">&ui=0</code> (hover near the bottom of the window to reveal controls)
-                        </li>
-                    </ul>
+                    {#if $subdomainMode}
+                        <ul class="list-inside list-disc space-y-1">
+                            <li>Gun name: <code class="bg-background-tertiary rounded px-1">pa15.{apexHost}</code></li>
+                            <li>
+                                Costume code: <code class="bg-background-tertiary rounded px-1">pa155802.{apexHost}</code>
+                            </li>
+                            <li>
+                                With variant: <code class="bg-background-tertiary rounded px-1">pa15.{apexHost}/?variant=damaged</code>
+                            </li>
+                            <li>
+                                Hide UI on load: append <code class="bg-background-tertiary rounded px-1">?ui=0</code> (hover near the bottom of the window to reveal controls)
+                            </li>
+                        </ul>
+                    {:else}
+                        <ul class="list-inside list-disc space-y-1">
+                            <li>Gun name: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa-15</code></li>
+                            <li>
+                                Costume code: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa15_5802</code>
+                            </li>
+                            <li>
+                                With variant: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa-15&variant=damaged</code>
+                            </li>
+                            <li>
+                                Hide UI on load: append <code class="bg-background-tertiary rounded px-1">&ui=0</code> (hover near the bottom of the window to reveal controls)
+                            </li>
+                        </ul>
+                    {/if}
                     <p class="mt-3 mb-1 font-medium text-foreground-secondary">Embedding</p>
                     <p class="mb-2">
                         The viewer is iframe-friendly. Snippet below reflects the currently selected model:

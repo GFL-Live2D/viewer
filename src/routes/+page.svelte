@@ -18,5 +18,8 @@
         variantsByModel={data.variantsByModel}
         assetBaseUrl={data.assetBaseUrl}
         hideUIOnLoad={data.hideUIOnLoad}
+        subdomainMode={data.subdomainMode}
+        subdomain={data.subdomain}
+        subdomainModel={data.subdomainModel}
     />
 {/if}

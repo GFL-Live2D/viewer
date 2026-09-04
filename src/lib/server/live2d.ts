@@ -97,6 +97,28 @@ export async function getGunModelVariants(modelId: string): Promise<string[]> {
     return variants || [];
 }
 
+// Hostname labels and query values both lose punctuation, so keys are compared stripped
+function normaliseKey(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+export async function findModelByName(name: string): Promise<Live2DModelIndex | null> {
+    if (!name) return null;
+
+    const [models, aliases] = await Promise.all([getGunModelIndex(), getAliases()]);
+    const target = normaliseKey(aliases[name.toLowerCase()] ?? name);
+    if (!target) return null;
+
+    const match = (m: Live2DModelIndex) =>
+        normaliseKey(m.gunName || '') === target ||
+        normaliseKey(m.code) === target ||
+        normaliseKey(m.code.replace(/_\d+$/, '')) === target ||
+        normaliseKey(m.directory) === target;
+
+    // Costumes are matched last so they never shadow a gun name or code
+    return models.find(match) ?? models.find((m) => normaliseKey(m.costumeName || '') === target) ?? null;
+}
+
 async function loadAllMotionData(): Promise<MotionData[]> {
     return motionsData as MotionData[];
 }
