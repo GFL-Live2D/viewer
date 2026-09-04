@@ -1,5 +1,6 @@
 import type { Live2DModelIndex } from '$lib/server/live2d';
 import { buildShareLink } from '$lib/shareLinks';
+import { env } from '$env/dynamic/public';
 
 export { displayVariant, internalVariant } from '$lib/modelResolve';
 
@@ -30,6 +31,7 @@ export async function copyShareLink(
     const link = buildShareLink(entry, {
         protocol: window.location.protocol,
         host: window.location.host,
+        apex: env.PUBLIC_DOMAIN ?? '',
         ...opts,
     });
 

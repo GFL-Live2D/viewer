@@ -6,6 +6,7 @@ export interface ShareContext {
     host: string;
     subdomainMode: boolean;
     subdomain: string;
+    apex?: string;
     variant: string;
     hideUI: boolean;
 }
@@ -15,12 +16,16 @@ export interface EmbedContext {
     host: string;
     subdomainMode: boolean;
     subdomain: string;
+    apex?: string;
     variant: string;
     transparent?: boolean;
 }
 
-export function apexHost(host: string, subdomain: string): string {
-    return subdomain ? host.slice(host.indexOf('.') + 1) : host;
+// A proxy may hide the browser's hostname from the server, so the apex is trusted over it
+export function apexHost(host: string, subdomain: string, apex = ''): string {
+    if (subdomain) return host.slice(host.indexOf('.') + 1);
+    if (apex && host !== apex && host.endsWith(`.${apex}`)) return apex;
+    return host;
 }
 
 export { shareLabel };
@@ -33,7 +38,7 @@ export function buildEmbedLink(entry: Live2DModelIndex, ctx: EmbedContext): stri
     const rest = params.toString();
 
     if (ctx.subdomainMode) {
-        const host = `${shareLabel(entry)}.${apexHost(ctx.host, ctx.subdomain)}`;
+        const host = `${shareLabel(entry)}.${apexHost(ctx.host, ctx.subdomain, ctx.apex)}`;
         return `${ctx.protocol}//${host}/?only${rest ? `&${rest}` : ''}`;
     }
 
@@ -48,7 +53,7 @@ export function buildShareLink(entry: Live2DModelIndex, ctx: ShareContext): stri
     if (ctx.subdomainMode) {
         const label = shareLabel(entry);
         const query = params.toString();
-        return `${ctx.protocol}//${label}.${apexHost(ctx.host, ctx.subdomain)}/${query ? `?${query}` : ''}`;
+        return `${ctx.protocol}//${label}.${apexHost(ctx.host, ctx.subdomain, ctx.apex)}/${query ? `?${query}` : ''}`;
     }
 
     params.set('model', entry.code.toLowerCase());

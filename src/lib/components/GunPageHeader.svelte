@@ -7,6 +7,7 @@
         subdomain,
     } from '$lib/stores/gun-page';
     import { apexHost as toApexHost, buildEmbedLink } from '$lib/shareLinks';
+    import { env } from '$env/dynamic/public';
     import type { Live2DModelIndex } from '$lib/server/live2d';
     import { Check, Copy, ImageDown, MousePointerClick } from '@lucide/svelte';
 
@@ -14,7 +15,7 @@
         baseHost: string;
     }>();
 
-    let apexHost = $derived(toApexHost(baseHost, $subdomain));
+    let apexHost = $derived(toApexHost(baseHost, $subdomain, env.PUBLIC_DOMAIN ?? ''));
 
     let copied = $state(false);
     let copyTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -43,6 +44,7 @@
             host: baseHost,
             subdomainMode: $subdomainMode,
             subdomain: $subdomain,
+            apex: env.PUBLIC_DOMAIN ?? '',
             variant: v === 'destroy' ? 'damaged' : v,
             transparent: embedTransparent,
         });
@@ -50,8 +52,8 @@
 
     // Browsers paint an opaque iframe background, so a see-through embed has to clear it too
     let embedSnippet = $derived(
-        `<iframe src="${embedUrl}"\n        width="100%" height="600" frameborder="0"` +
-            (embedTransparent ? `\n        style="background: transparent"` : '') +
+        `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0"` +
+            (embedTransparent ? ` style="background: transparent"` : '') +
             `></iframe>`,
     );
 
