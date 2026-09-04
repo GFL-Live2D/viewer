@@ -1,6 +1,18 @@
 <script lang="ts">
     import { ModelLoadingState } from '$lib/live2d/Live2DController.svelte';
+    import { Checkbox } from '$lib/components/ui/checkbox';
     import { controller } from '$lib/stores/gun-page';
+
+    function hoverPart(id: string | null) {
+        if (!$controller?.state.highlightHoveredPart) return;
+        $controller?.highlightPart(id);
+    }
+
+    function setHighlightEnabled(enabled: boolean) {
+        if (!$controller) return;
+        $controller.state.highlightHoveredPart = enabled;
+        if (!enabled) $controller.clearPartHighlight();
+    }
 </script>
 
 <!-- PARTS SECTION: Bottom 1/3 -->
@@ -16,21 +28,35 @@
                 Reset
             </button>
         </div>
+        <label class="mt-3 flex cursor-pointer items-center gap-3">
+            <Checkbox
+                checked={$controller?.state.highlightHoveredPart ?? true}
+                onCheckedChange={setHighlightEnabled}
+            />
+            <span class="text-foreground text-sm">Highlight part on label hover</span>
+        </label>
     </div>
 
     {#if $controller?.state.loading === ModelLoadingState.READY}
         <div class="custom-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto p-4">
             {#each $controller?.state.parts ?? [] as part (part.id)}
-                <div class="flex flex-col gap-1">
-                    <div class="flex items-center justify-between gap-2">
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                    class="flex flex-col gap-1"
+                    onmouseenter={() => hoverPart(part.id)}
+                    onmouseleave={() => hoverPart(null)}
+                    onfocusin={() => hoverPart(part.id)}
+                    onfocusout={() => hoverPart(null)}
+                >
+                    <div class="flex items-center gap-2">
                         <label
                             for="part-opacity-{part.index}"
-                            class="user-select-none text-foreground-secondary truncate text-xs"
+                            class="user-select-none text-foreground-secondary min-w-0 flex-1 truncate text-xs"
                             title={part.id}
                         >
                             {part.id}
                         </label>
-                        <span class="user-select-none text-foreground-tertiary font-mono text-xs"
+                        <span class="user-select-none text-foreground-tertiary shrink-0 font-mono text-xs"
                             >{(part.opacity * 100).toFixed(0)}%</span
                         >
                     </div>

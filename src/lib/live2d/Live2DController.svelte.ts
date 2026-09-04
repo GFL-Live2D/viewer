@@ -101,6 +101,7 @@ export class Live2DController {
     private bgSprite: PIXI.Sprite | null = null; // Background sprite
     private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
     private modelUrl: string | null = null; // model3.json URL of the currently loaded model
+    private highlightedPartId: string | null = null;
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
@@ -139,6 +140,7 @@ export class Live2DController {
             index: number;
             opacity: number;
         }>;
+        highlightHoveredPart: boolean; // Tint a part on the model while its label is hovered
         followParameterValues: boolean; // Auto-update parameters from animation
         forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
         renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
@@ -163,6 +165,7 @@ export class Live2DController {
         isAlwaysFocus: false,
         parameters: [],
         parts: [],
+        highlightHoveredPart: true,
         followParameterValues: false,
         forceLipSync: false,
         renderCaptionsOnCanvas: false,
@@ -2083,6 +2086,37 @@ export class Live2DController {
     }
 
     /**
+     * Tint one part with an additive screen colour so hovering its label reveals it on the model
+     */
+    highlightPart(id: string | null) {
+        if (!this.model) return;
+        if (this.highlightedPartId === id) return;
+
+        const coreModel = this.model.internalModel.coreModel as any;
+        if (!coreModel?.setPartScreenColorByRGBA) return;
+
+        const apply = (partId: string, on: boolean) => {
+            const index = this.state.parts.find((p) => p.id === partId)?.index;
+            if (index === undefined) return;
+            // Child drawables only inherit the colour while the part's override flag is set
+            coreModel.setOverrideColorForPartScreenColors?.(index, on);
+            const v = on ? 1 : 0;
+            coreModel.setPartScreenColorByRGBA(index, v, v, v, 1);
+        };
+
+        if (this.highlightedPartId) apply(this.highlightedPartId, false);
+        if (id) apply(id, true);
+        this.highlightedPartId = id;
+    }
+
+    /**
+     * Drop the highlight without touching state the next model load rebuilds
+     */
+    clearPartHighlight() {
+        this.highlightPart(null);
+    }
+
+    /**
      * Enable/disable real-time parameter following
      */
     setFollowParameters(enabled: boolean) {
@@ -2148,6 +2182,7 @@ export class Live2DController {
         this.voiceMap = {};
         this.fileToMotionId = {};
         this.currentCharacterCode = '';
+        this.highlightedPartId = null;
     }
 
     private handleGlobalTouchMove = (e: TouchEvent) => {
