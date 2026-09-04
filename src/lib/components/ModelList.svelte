@@ -10,6 +10,7 @@
         sortBy,
         preferredVariantKind,
         searchQuery,
+        listDensity,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d';
 
@@ -37,6 +38,58 @@
     let showTopIndicator = $state(false);
     let showBottomIndicator = $state(false);
     let resizeObserver: ResizeObserver | undefined;
+
+    // Roving tabindex: the list is one tab stop and arrow keys move within it, so tabbing past
+    // the list does not mean stepping through every row.
+    let focusRow = $state(0);
+    let focusCol = $state(0);
+
+    let isTable = $derived($listDensity === 'table');
+
+    // Column 0 is the name button, the rest are that row's variant cells
+    function rowLength(index: number): number {
+        const model = $filteredModels[index];
+        if (!model || isMobileTablet) return 1;
+        return 1 + ($variantsByModel[model.directory]?.length ?? 0);
+    }
+
+    // Entering the list lands on the selected model rather than the top of the list
+    let tabStopRow = $derived.by(() => {
+        if (focusRow > 0) return Math.min(focusRow, $filteredModels.length - 1);
+        const selected = $filteredModels.findIndex((m) => m.id === $selectedModel);
+        return selected >= 0 ? selected : 0;
+    });
+
+    function isTabStop(row: number, col: number): boolean {
+        return row === tabStopRow && col === Math.min(focusCol, rowLength(tabStopRow) - 1);
+    }
+
+    function focusCell(row: number, col: number) {
+        focusRow = row;
+        focusCol = col;
+        const model = $filteredModels[row];
+        if (!model) return;
+        const cell = listItemRefs[model.id]?.querySelectorAll<HTMLElement>('button')[col];
+        cell?.focus();
+        cell?.scrollIntoView({ block: 'nearest' });
+    }
+
+    function handleGridKeydown(e: KeyboardEvent, row: number, col: number) {
+        const lastRow = $filteredModels.length - 1;
+        let next: [number, number] | null = null;
+
+        if (e.key === 'ArrowDown') next = [Math.min(row + 1, lastRow), col];
+        else if (e.key === 'ArrowUp') next = [Math.max(row - 1, 0), col];
+        else if (e.key === 'ArrowRight') next = [row, Math.min(col + 1, rowLength(row) - 1)];
+        else if (e.key === 'ArrowLeft') next = [row, Math.max(col - 1, 0)];
+        else if (e.key === 'Home') next = [0, 0];
+        else if (e.key === 'End') next = [lastRow, 0];
+        else return;
+
+        e.preventDefault();
+        const [r, c] = next;
+        focusCell(r, Math.min(c, rowLength(r) - 1));
+    }
 
     function selectModelInternal(modelId: string, variant?: string, directory?: string) {
         const finalVariant =
@@ -195,26 +248,41 @@
     <div
         bind:this={scrollContainer}
         onscroll={onScroll}
-        class="custom-scrollbar border-border flex-1 overflow-y-scroll border-t p-4"
+        class="custom-scrollbar border-border flex-1 overflow-y-scroll border-t {isTable ? '' : 'p-4'}"
     >
-        <div class="space-y-3">
-            {#each $filteredModels as model (model.id)}
+        <div class={isTable ? '' : 'space-y-3'}>
+            {#each $filteredModels as model, rowIndex (model.id)}
                 <div
                     bind:this={listItemRefs[model.id]}
                     id={`model-list-item-${model.id}`}
-                    class="flex overflow-hidden rounded border transition-colors duration-200 {$selectedModel ===
-                    model.id
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border bg-background-secondary/50 hover:border-accent hover:bg-accent/20'}"
+                    class="flex transition-colors duration-200 {isTable
+                        ? 'border-border border-r border-b'
+                        : 'overflow-hidden rounded border'} {$selectedModel === model.id
+                        ? isTable
+                            ? 'bg-accent/10'
+                            : 'border-accent bg-accent/10'
+                        : isTable
+                          ? 'hover:bg-accent/20'
+                          : 'border-border bg-background-secondary/50 hover:border-accent hover:bg-accent/20'}"
                 >
-                    <div class="border-border bg-background-tertiary/50 flex shrink-0 items-center border-r px-2 py-3">
-                        <span class="margin-auto text-foreground-tertiary w-8 text-center font-mono text-xs"
+                    <div
+                        class="border-border bg-background-tertiary/50 flex shrink-0 items-center border-r px-2 {isTable
+                            ? 'py-1'
+                            : 'py-3'}"
+                    >
+                        <span
+                            class="margin-auto text-foreground-tertiary font-mono text-xs {isTable
+                                ? 'w-5 text-right'
+                                : 'w-8 text-center'}"
                             >{model.id.match(/\d+$/)}</span
                         >
                     </div>
 
                     <button
                         onclick={() => selectModelInternal(model.id, undefined, model.directory)}
+                        onkeydown={(e) => handleGridKeydown(e, rowIndex, 0)}
+                        onfocus={() => ((focusRow = rowIndex), (focusCol = 0))}
+                        tabindex={isTabStop(rowIndex, 0) ? 0 : -1}
                         class="overflow-hidden bg-transparent transition-colors {$selectedModel === model.id
                             ? 'hover:bg-accent-hover/30'
                             : 'hover:bg-background-tertiary/20'}"
@@ -229,25 +297,25 @@
                             style="display: flex; align-items: center; will-change: transform; white-space: nowrap; transition: transform 0.3s ease-in-out;"
                         >
                             {#if $sortBy === 'name'}
-                                <div class="flex shrink-0 items-center px-3 py-3">
+                                <div class="flex shrink-0 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
                                     <div class="text-foreground-secondary text-xs font-semibold">
                                         <TextScroller text={model.costumeName} />
                                     </div>
                                 </div>
                                 <div class="bg-border h-4 w-px"></div>
-                                <div class="flex min-w-0 flex-1 items-center px-3 py-3">
+                                <div class="flex min-w-0 flex-1 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
                                     <span class="text-foreground-secondary text-xs font-semibold"
                                         ><GunNameDisplay name={$modelNames[model.id]} /></span
                                     >
                                 </div>
                             {:else}
-                                <div class="flex shrink-0 items-center px-3 py-3">
+                                <div class="flex shrink-0 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
                                     <span class="text-foreground-secondary text-xs font-semibold"
                                         ><GunNameDisplay name={$modelNames[model.id]} /></span
                                     >
                                 </div>
                                 <div class="bg-border h-4 w-px"></div>
-                                <div class="flex min-w-0 flex-1 items-center px-3 py-3">
+                                <div class="flex min-w-0 flex-1 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
                                     <div class="text-foreground-secondary text-xs font-semibold">
                                         <TextScroller text={model.costumeName} />
                                     </div>
@@ -258,16 +326,21 @@
 
                     {#if !isMobileTablet && ($variantsByModel[model.directory]?.length ?? 0) > 0}
                         <div
-                            class="border-border bg-background-tertiary/50 grid grow gap-px border-l"
+                            class="border-border bg-background-tertiary/50 grid grow border-l"
                             style="grid-template-columns: repeat({$variantsByModel[model.directory].length}, 1fr);"
                         >
-                            {#each $variantsByModel[model.directory] as variant}
+                            {#each $variantsByModel[model.directory] as variant, variantIndex}
                                 <button
                                     onclick={() => selectModelInternal(model.id, variant)}
-                                    class="flex items-center justify-center p-2 transition-all duration-300 {$selectedModel ===
+                                    onkeydown={(e) => handleGridKeydown(e, rowIndex, variantIndex + 1)}
+                                    onfocus={() => ((focusRow = rowIndex), (focusCol = variantIndex + 1))}
+                                    tabindex={isTabStop(rowIndex, variantIndex + 1) ? 0 : -1}
+                                    class="variant-cell border-border flex items-center justify-center px-2 not-first:border-l {isTable
+                                        ? 'py-1'
+                                        : 'py-2'} transition-all duration-300 {$selectedModel ===
                                         model.id && $selectedVariant === variant
                                         ? 'bg-accent text-foreground font-bold shadow-inner'
-                                        : 'bg-background-secondary/30 text-foreground-tertiary hover:bg-background-tertiary hover:text-foreground-secondary'}"
+                                        : 'bg-background-secondary/30 text-foreground-tertiary hover:bg-accent/40 hover:text-foreground'}"
                                     title={formatVariant(variant)}
                                 >
                                     <span class="truncate text-[10px] tracking-wider uppercase"

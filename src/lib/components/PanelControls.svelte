@@ -56,7 +56,7 @@
         <button
             onclick={toggleBgMoveMode}
             class="border-border flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition {isBgMoveMode
-                ? 'border-accent bg-accent hover:bg-accent-secondary text-white'
+                ? 'border-accent bg-accent hover:bg-accent-hover text-white'
                 : 'bg-background-secondary text-foreground-tertiary hover:border-accent hover:text-foreground'}"
             title={isBgMoveMode ? 'Disable background drag' : 'Enable background drag'}
         >

@@ -23,6 +23,7 @@
     import RevealButton from '$lib/components/RevealButton.svelte';
     import ThemeToggle from '$lib/components/ThemeToggle.svelte';
     import FullscreenToggle from '$lib/components/FullscreenToggle.svelte';
+    import SpeedDrawButton from '$lib/components/SpeedDrawButton.svelte';
     import TabbedPanel from '$lib/components/TabbedPanel.svelte';
     import ResizeHandle from '$lib/components/ResizeHandle.svelte';
     import { Live2DController, ModelLoadingState } from '$lib/live2d/Live2DController.svelte';
@@ -444,6 +445,11 @@
         otherVariantOf($selectedCharacterEntry, $selectedVariant, $variantsByModel),
     );
 
+    // Reset Model is the way back to a moving model, so it is highlighted while movement is off
+    let animationSuspended = $derived(
+        (controller?.state.isFrozen ?? false) || (controller?.state.motionsPaused ?? false),
+    );
+
     function handleSwapVariant() {
         const entry = $selectedCharacterEntry;
         if (!entry || !otherVariant) return;
@@ -749,12 +755,14 @@
                     style="opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI ? 'none' : 'auto'};"
                     inert={!isLeftPanelOpen}
                 >
-                    {#if isDesktopWidth}
-                        <!-- Desktop: Regular list -->
+                    <!-- Width is only known after hydration, so CSS hides the branch that does not
+                         apply and keeps the tab bar off desktop during SSR -->
+                    <div class="hidden 2xl:contents">
                         <GunPageHeader {baseHost} />
                         <ModelFilters onSelectModel={selectModelVariant} />
                         <ModelList {models} onSelectModel={selectModelVariant} formatVariant={getDisplayVariant} />
-                    {:else}
+                    </div>
+                    <div class="contents 2xl:hidden">
                         <!-- Tablet: Tabbed content -->
                         <TabbedPanel bind:activeTab>
                             {#if activeTab === 'info'}
@@ -776,7 +784,9 @@
                                     <div class="grid grid-cols-2 gap-2 px-4 pt-3 pb-3">
                                         <button
                                             onclick={handleReset}
-                                            class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition"
+                                            class="bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {animationSuspended
+                                                ? 'border-accent text-accent'
+                                                : 'border-border'}"
                                         >
                                             Reset Model
                                         </button>
@@ -787,7 +797,7 @@
                                                         !controller.state.showHitboxDebug;
                                                 }
                                             }}
-                                            class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {controller
+                                            class="border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {controller
                                                 ?.state.showHitboxDebug
                                                 ? 'border-accent text-accent'
                                                 : ''}"
@@ -808,7 +818,7 @@
                                 </div>
                             {/if}
                         </TabbedPanel>
-                    {/if}
+                    </div>
                 </div>
 
                 <!-- LEFT SPEED DIAL: Positioned at right edge of panel (slides with panel) -->
@@ -823,15 +833,15 @@
                         </div>
 
                         <!-- Panel toggle chevron (tablet only, md-xl) - matches desktop styling -->
-                        <button
+                        <SpeedDrawButton
                             onclick={togglePanel}
-                            class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:text-accent hidden h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:flex 2xl:hidden"
+                            class="hidden md:flex 2xl:hidden"
                             title={isLeftPanelOpen ? 'Collapse list' : 'Expand list'}
-                            aria-label={isLeftPanelOpen ? 'Collapse model list panel' : 'Expand model list panel'}
-                            aria-pressed={isLeftPanelOpen}
+                            ariaLabel={isLeftPanelOpen ? 'Collapse model list panel' : 'Expand model list panel'}
+                            ariaPressed={isLeftPanelOpen}
                         >
                             <MorphingChevron class="h-5 w-5" pointsRight={!isLeftPanelOpen} />
-                        </button>
+                        </SpeedDrawButton>
 
                         <!-- Viewport Controls (chevron hidden on tablet, shown on desktop only) -->
                         <ViewportControls hideChevronOnTablet={true} bind:isBgMoveMode />
@@ -937,7 +947,9 @@
                         <div class="grid grid-cols-2 gap-2 px-4 pt-3 pb-3">
                             <button
                                 onclick={handleReset}
-                                class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition"
+                                class="bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {animationSuspended
+                                    ? 'border-accent text-accent'
+                                    : 'border-border'}"
                             >
                                 Reset Model
                             </button>
@@ -947,7 +959,7 @@
                                         controller.state.showHitboxDebug = !controller.state.showHitboxDebug;
                                     }
                                 }}
-                                class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {controller
+                                class="border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground rounded border px-3 py-2 text-xs font-medium transition {controller
                                     ?.state.showHitboxDebug
                                     ? 'border-accent text-accent'
                                     : ''}"
@@ -1076,7 +1088,9 @@
                             <div class="grid grid-cols-2 gap-2 px-4 pt-4">
                                 <button
                                     onclick={handleReset}
-                                    class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition"
+                                    class="bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition {animationSuspended
+                                        ? 'border-accent text-accent'
+                                        : 'border-border'}"
                                 >
                                     Reset Model
                                 </button>
@@ -1086,7 +1100,7 @@
                                             controller.state.showHitboxDebug = !controller.state.showHitboxDebug;
                                         }
                                     }}
-                                    class="border-border bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition {controller
+                                    class="border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground h-10 rounded border px-3 py-2 text-xs font-medium transition {controller
                                         ?.state.showHitboxDebug
                                         ? 'border-accent text-accent'
                                         : ''}"

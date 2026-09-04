@@ -23,6 +23,7 @@
     let openShortcuts = $state<string[]>([]);
     let openAccess = $state<string[]>([]);
 
+
     // The collapse animates to a height measured before it runs, so nested content has to fold first
     $effect(() => {
         if (!openSections.includes('about')) {
@@ -83,7 +84,7 @@
                     </p>
                     <Accordion.Root class="hidden w-full 2xl:block" type="multiple" bind:value={openShortcuts}>
                     <Accordion.Item value="shortcuts" class="border-b-0">
-                        <Accordion.Trigger class="text-foreground-tertiary hover:text-foreground pb-0 text-sm">
+                        <Accordion.Trigger class="text-foreground-tertiary hover:text-foreground mt-2 py-2 text-sm">
                             Keyboard Shortcuts
                         </Accordion.Trigger>
                         <Accordion.Content class="text-foreground-tertiary pt-2 pb-0 text-sm">
@@ -107,7 +108,7 @@
                     </Accordion.Root>
                     <Accordion.Root class="w-full" type="multiple" bind:value={openAccess}>
                     <Accordion.Item value="access">
-                        <Accordion.Trigger class="text-foreground-tertiary hover:text-foreground pt-4 pb-0 text-sm">
+                        <Accordion.Trigger class="text-foreground-tertiary hover:text-foreground mt-2 py-2 text-sm">
                             Direct Access
                         </Accordion.Trigger>
                         <Accordion.Content class="text-foreground-tertiary pt-2 pb-0 text-sm">

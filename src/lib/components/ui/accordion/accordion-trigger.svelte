@@ -19,7 +19,7 @@
         data-slot="accordion-trigger"
         bind:ref
         class={cn(
-            'focus-visible:border-accent focus-visible:ring-accent/50 flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-start text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180',
+            'focus-visible:outline-accent flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-start text-sm font-medium transition-all outline-none hover:underline focus-visible:outline-2 focus-visible:-outline-offset-1 disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180',
             className,
         )}
         {...restProps}

@@ -19,8 +19,8 @@
                     controller.state.isMotionPlaying
                         ? 'border-accent bg-accent text-white shadow-lg'
                         : controller.state.groupAudioState?.[`${group}:${variant.index}`]
-                          ? 'bg-accent/10 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground'
-                          : 'bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground'}"
+                          ? 'bg-accent/10 text-foreground-secondary hover:border-accent hover:bg-background-tertiary hover:text-foreground'
+                          : 'bg-background-secondary/30 text-foreground-secondary hover:border-accent hover:bg-background-tertiary hover:text-foreground'}"
                     title={variant.label}
                 >
                     <span class="block truncate">{variant.label}</span>

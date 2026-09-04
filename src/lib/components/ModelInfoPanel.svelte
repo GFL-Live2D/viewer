@@ -149,14 +149,14 @@
                             <ArrowLeftRight class="h-3.5 w-3.5" />
                         </div>
                         <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
-                            >{currentDisplayVariant || 'Normal'}</span
+                            >{currentDisplayVariant}</span
                         >
                     </button>
-                {:else}
+                {:else if currentDisplayVariant}
                     <div class="text-foreground-secondary flex gap-3">
                         <div class="w-4 shrink-0"></div>
                         <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
-                            >{currentDisplayVariant || 'Normal'}</span
+                            >{currentDisplayVariant}</span
                         >
                     </div>
                 {/if}

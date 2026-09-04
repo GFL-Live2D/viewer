@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
+import { SORT_BY_STORAGE_KEY, parseSortBy, type SortBy } from '$lib/sortBy';
 import type { Live2DController } from '$lib/live2d/Live2DController.svelte';
 import type { Live2DModelIndex } from '$lib/server/live2d';
 
@@ -23,9 +25,53 @@ export const variantsByModel = writable<Record<string, string[]>>({});
 export const subdomainMode = writable<boolean>(false);
 export const subdomain = writable<string>('');
 
+// The model list renders only after the client measures the viewport, so localStorage is in time
+function createSortByStore() {
+    const initial = parseSortBy(browser ? localStorage.getItem(SORT_BY_STORAGE_KEY) : null);
+
+    const { subscribe, set, update } = writable<SortBy>(initial);
+
+    function persist(value: SortBy) {
+        if (browser) localStorage.setItem(SORT_BY_STORAGE_KEY, value);
+    }
+
+    return {
+        subscribe,
+        set: (value: SortBy) => {
+            persist(value);
+            set(value);
+        },
+        update: (updater: (value: SortBy) => SortBy) => {
+            update((current) => {
+                const next = updater(current);
+                persist(next);
+                return next;
+            });
+        },
+    };
+}
+
+export type ListDensity = 'list' | 'table';
+
+const LIST_DENSITY_STORAGE_KEY = 'gfl:list-density';
+
+function createListDensityStore() {
+    const stored = browser ? localStorage.getItem(LIST_DENSITY_STORAGE_KEY) : null;
+    const { subscribe, set } = writable<ListDensity>(stored === 'table' ? 'table' : 'list');
+
+    return {
+        subscribe,
+        set: (value: ListDensity) => {
+            if (browser) localStorage.setItem(LIST_DENSITY_STORAGE_KEY, value);
+            set(value);
+        },
+    };
+}
+
 // UI filters and preferences
 export const searchQuery = writable<string>('');
-export const sortBy = writable<'gun' | 'id' | 'name'>('gun');
+export const sortBy = createSortByStore();
+export const listDensity = createListDensityStore();
 export const filterDuplicates = writable<boolean>(true);
 export const decensor = writable<boolean>(false);
 export const isCaptionDetached = writable<boolean>(false);

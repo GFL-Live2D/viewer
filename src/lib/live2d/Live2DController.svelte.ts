@@ -102,6 +102,9 @@ export class Live2DController {
     private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
     private modelUrl: string | null = null; // model3.json URL of the currently loaded model
     private highlightedPartId: string | null = null;
+    private paramOverrides = new Map<number, number>(); // parameter index -> pinned value
+    private applyOverrides?: () => void;
+    private frozenEffects?: { breath: unknown; physics: unknown; pose: unknown; eyeBlink: unknown };
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
@@ -141,6 +144,9 @@ export class Live2DController {
             opacity: number;
         }>;
         highlightHoveredPart: boolean; // Tint a part on the model while its label is hovered
+        overriddenParams: number[]; // Indices of parameters pinned to a manual value
+        isFrozen: boolean; // Suspend breath, physics, pose and focus so manual values hold still
+        motionsPaused: boolean; // Motions stopped and idle disabled until a motion is played
         followParameterValues: boolean; // Auto-update parameters from animation
         forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
         renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
@@ -166,6 +172,9 @@ export class Live2DController {
         parameters: [],
         parts: [],
         highlightHoveredPart: true,
+        overriddenParams: [],
+        isFrozen: false,
+        motionsPaused: false,
         followParameterValues: false,
         forceLipSync: false,
         renderCaptionsOnCanvas: false,
@@ -1619,6 +1628,7 @@ export class Live2DController {
 
         this.state.showProgressBar = true;
         this.state.isMotionPlaying = true;
+        this.state.motionsPaused = false;
         this.state.currentMotionGroup = groupName;
         this.state.currentMotionIndex = motionIndex;
         this.motionStartTime = Date.now();
@@ -1977,6 +1987,7 @@ export class Live2DController {
         this.state.showProgressBar = false;
         this.state.motionProgress = 0;
         this.motionStartTime = 0;
+        this.state.motionsPaused = true;
     }
 
     resumeMotions() {
@@ -1989,6 +2000,7 @@ export class Live2DController {
         if (this.originalIdleGroup) {
             motionManager.groups.idle = this.originalIdleGroup;
         }
+        this.state.motionsPaused = false;
     }
 
     setParameterValue(paramName: string, value: number) {
@@ -2006,9 +2018,87 @@ export class Live2DController {
 
             // Optimistically update local state to avoid full re-render
             param.value = value;
+
+            this.paramOverrides.set(param.index, value);
+            this.state.overriddenParams = [...this.paramOverrides.keys()];
+            this.ensureOverrideHook();
         } catch (e) {
             // Silently ignore invalid parameter names or out-of-range values
         }
+    }
+
+    // Motions, focus, physics and pose all write parameters each frame, so pinned values are
+    // re-applied on beforeModelUpdate, the last hook before the core model reads them.
+    private ensureOverrideHook() {
+        const model = this.model;
+        if (!model || this.applyOverrides) return;
+
+        const coreModel = model.internalModel.coreModel as any;
+        this.applyOverrides = () => {
+            for (const [index, value] of this.paramOverrides) {
+                coreModel.setParameterValueByIndex?.(index, value);
+            }
+        };
+        model.internalModel.on('beforeModelUpdate', this.applyOverrides);
+    }
+
+    private removeOverrideHook() {
+        if (!this.applyOverrides) return;
+        this.model?.internalModel.off('beforeModelUpdate', this.applyOverrides);
+        this.applyOverrides = undefined;
+    }
+
+    /**
+     * Release one parameter back to animation control
+     */
+    releaseParameter(index: number) {
+        this.paramOverrides.delete(index);
+        this.state.overriddenParams = [...this.paramOverrides.keys()];
+        if (this.paramOverrides.size === 0) this.removeOverrideHook();
+        this.refreshParametersState();
+    }
+
+    /**
+     * Release every pinned parameter
+     */
+    releaseAllParameters() {
+        this.paramOverrides.clear();
+        this.state.overriddenParams = [];
+        this.removeOverrideHook();
+        this.refreshParametersState();
+    }
+
+    /**
+     * Suspend the per-frame parameter writers while leaving the ticker running so edits still draw
+     */
+    setFrozen(frozen: boolean) {
+        const internal = this.model?.internalModel as any;
+        if (!internal) return;
+
+        if (frozen) {
+            // Motions outrank every ambient effect, so they have to go too for the pose to hold
+            this.pauseMotions();
+            this.frozenEffects = {
+                breath: internal.breath,
+                physics: internal.physics,
+                pose: internal.pose,
+                eyeBlink: internal.eyeBlink,
+            };
+            internal.breath = undefined;
+            internal.physics = undefined;
+            internal.pose = undefined;
+            internal.eyeBlink = undefined;
+            internal.focusController?.focus(0, 0, true);
+        } else if (this.frozenEffects) {
+            internal.breath = this.frozenEffects.breath;
+            internal.physics = this.frozenEffects.physics;
+            internal.pose = this.frozenEffects.pose;
+            internal.eyeBlink = this.frozenEffects.eyeBlink;
+            this.frozenEffects = undefined;
+            this.resumeMotions();
+        }
+
+        this.state.isFrozen = frozen;
     }
 
     /**
@@ -2034,6 +2124,8 @@ export class Live2DController {
         // Map to ensure missing is always boolean (not optional)
         this.state.parameters = params.map((p) => ({
             ...p,
+            // A pinned slider tracks the user's value, not what the animation wrote
+            value: this.paramOverrides.get(p.index) ?? p.value,
             missing: p.missing ?? false,
         }));
     }
@@ -2161,6 +2253,14 @@ export class Live2DController {
             }
             this.hitAreaFrames = undefined;
         }
+
+        // Indices are per-model, so pinned values must not carry over to the next one
+        this.removeOverrideHook();
+        this.paramOverrides.clear();
+        this.state.overriddenParams = [];
+        this.frozenEffects = undefined;
+        this.state.isFrozen = false;
+        this.state.motionsPaused = false;
 
         if (this.model) {
             try {

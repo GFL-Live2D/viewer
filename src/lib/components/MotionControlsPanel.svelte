@@ -27,7 +27,7 @@
             <h3 class="subtitle text-foreground-secondary text-lg font-semibold tracking-wide">Motions</h3>
             <button
                 onclick={toggleParametersPanel}
-                class="group/btn border-border bg-background-secondary/80 hover:border-accent hover:bg-accent/10 hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-300 active:scale-95 2xl:flex"
+                class="group/btn border-border bg-background-tertiary hover:border-accent hover:bg-background-secondary hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border transition-all duration-300 active:scale-95 2xl:flex"
                 title="Toggle parameters and parts panel"
             >
                 <SlidersHorizontal
@@ -81,7 +81,7 @@
                                     onclick={() => $controller.playAudioOnly(voiceline.motionId)}
                                     class="border-border rounded border px-3 py-2 text-xs font-medium transition {isPlaying
                                         ? 'border-accent bg-accent text-white shadow-lg'
-                                        : 'bg-background-secondary/30 text-foreground-secondary hover:bg-background-tertiary hover:text-foreground'}"
+                                        : 'bg-background-secondary/30 text-foreground-secondary hover:border-accent hover:bg-background-tertiary hover:text-foreground'}"
                                     title={voiceline.caption}
                                 >
                                     <span class="block truncate">{voiceline.voice_key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}</span>

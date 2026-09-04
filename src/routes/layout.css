@@ -74,6 +74,7 @@
     --color-foreground-tertiary: var(--text-tertiary);
     --color-accent: var(--accent-primary);
     --color-accent-secondary: var(--accent-secondary);
+    --color-accent-hover: var(--accent-hover);
     --color-border: var(--border-primary);
     --color-border-secondary: var(--border-secondary);
 
@@ -118,8 +119,11 @@
         outline-offset: 2px;
     }
 
-    button:focus-visible {
-        outline-offset: 0;
+    /* Inset so the ring is not clipped by a neighbour that overlaps the element's edge */
+    button:focus-visible,
+    a:focus-visible,
+    [role='button']:focus-visible {
+        outline-offset: -2px;
         box-shadow: 0 0 12px var(--color-accent);
     }
 
@@ -148,6 +152,12 @@
             transition-duration: 0.01ms;
         }
     }
+}
+
+/* Unlayered so it beats the utility background. Variant cells sit edge to edge in a grid, so
+   neighbours hide most of the focus ring and the tint is what actually marks them. */
+.variant-cell:focus-visible {
+    background-color: color-mix(in srgb, var(--color-accent) 25%, var(--color-background-secondary));
 }
 
 /* Range Slider Styling */
@@ -360,7 +370,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-accent-secondary);
+    background: var(--accent-hover);
 }
 
 /* Firefox scrollbar */

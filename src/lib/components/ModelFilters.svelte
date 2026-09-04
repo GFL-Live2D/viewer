@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { Activity, Settings2, Funnel, ListChevronsUpDown, HeartPulse, HeartHandshake, Dices, ExternalLink } from '@lucide/svelte';
+    import { Activity, Settings2, Funnel, ListChevronsUpDown, HeartPulse, HeartHandshake, Dices, ExternalLink, Rows3, Table } from '@lucide/svelte';
     import * as Accordion from '$lib/components/ui/accordion';
     import * as Select from '$lib/components/ui/select';
-    import * as ToggleGroup from '$lib/components/ui/toggle-group';
     import { Input } from '$lib/components/ui/input';
     import { toggleVariants } from '$lib/components/ui/toggle/index.js';
     import { cn } from '$lib/utils.js';
@@ -16,11 +15,23 @@
         variantsByModel,
         selectedCharacterEntry,
         modelNames,
+        listDensity,
     } from '$lib/stores/gun-page';
 
     let { onSelectModel = (modelId: string, variant: string) => {} } = $props<{
         onSelectModel?: (modelId: string, variant: string) => void;
     }>();
+
+    const filterButtonClass =
+        'border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground flex-grow basis-0 rounded-lg border px-3 py-2 text-xs font-medium transition';
+
+    let showPerfMonitor = $state(false);
+
+    function togglePerfMonitor() {
+        showPerfMonitor = !showPerfMonitor;
+        const statsEl = document.getElementById('stats');
+        if (statsEl) statsEl.style.display = showPerfMonitor ? 'block' : 'none';
+    }
 
     function pickRandom() {
         const pool = $filteredModels.filter((m) => m.id !== $selectedModel);
@@ -63,7 +74,7 @@
                 value={$searchQuery}
                 onchange={(e) => searchQuery.set(e.currentTarget.value)}
                 oninput={(e) => searchQuery.set(e.currentTarget.value)}
-                class="bg-background-tertiary text-foreground placeholder-theme-tertiary border-border focus:border-border h-10 w-full rounded-lg border px-4 py-2 text-sm transition focus:outline-none"
+                class="bg-background-tertiary text-foreground placeholder-theme-tertiary border-border hover:border-accent hover:bg-background-secondary focus:border-accent focus:bg-background-secondary h-10 w-full rounded-lg border px-4 py-2 text-sm transition focus:outline-none"
             />
             <div>
                 <Select.Root
@@ -71,7 +82,10 @@
                     value={$sortBy}
                     onValueChange={(v) => sortBy.set(v as 'gun' | 'id' | 'name')}
                 >
-                    <Select.Trigger size="lg" class="border-border bg-background-tertiary text-foreground w-full">
+                    <Select.Trigger
+                        size="lg"
+                        class="border-border bg-background-tertiary text-foreground hover:border-accent hover:bg-background-secondary w-full"
+                    >
                         {$sortBy === 'gun' ? 'Gun' : $sortBy === 'name' ? 'Costume' : 'ID'}
                     </Select.Trigger>
                     <Select.Content class="border-border bg-background-tertiary text-foreground w-full min-w-0">
@@ -82,29 +96,19 @@
                 </Select.Root>
             </div>
             <Accordion.Trigger
-                class="border-border bg-background-tertiary text-foreground-tertiary hover:text-foreground flex h-10 w-10 items-center justify-center rounded-lg border transition [&>svg:last-child]:hidden"
+                class="border-border bg-background-tertiary text-foreground-tertiary hover:border-accent hover:bg-background-secondary hover:text-foreground flex h-10 w-10 items-center justify-center rounded-lg border transition [&>svg:last-child]:hidden"
                 title="More options"
             >
                 <Settings2 class="h-5 w-5" />
             </Accordion.Trigger>
         </div>
         <Accordion.Content class="px-4 pb-4">
-            <ToggleGroup.Root
-                type="multiple"
-                value={[$filterDuplicates ? 'filter-duplicates' : '', $decensor ? 'decensor' : ''].filter(Boolean)}
-                onValueChange={(values) => {
-                    filterDuplicates.set(values.includes('filter-duplicates'));
-                    decensor.set(values.includes('decensor'));
-                }}
-                spacing={2}
-                class="flex w-full flex-wrap gap-2"
-            >
-                <ToggleGroup.Item
-                    value="filter-duplicates"
-                    class="group border-border bg-background-tertiary text-foreground-secondary hover:bg-background-secondary data-[state=on]:border-border data-[state=on]:bg-background-tertiary data-[state=on]:text-foreground hover:text-foreground
-					min-w-[150px] flex-grow rounded-lg border px-3 py-2
-					text-xs font-medium
-					transition"
+            <div class="flex w-full flex-wrap gap-2">
+                <button
+                    type="button"
+                    onclick={() => filterDuplicates.set(!$filterDuplicates)}
+                    aria-pressed={$filterDuplicates}
+                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[150px]')}
                 >
                     <div class="flex items-center justify-center gap-2">
                         {#if $filterDuplicates}
@@ -114,12 +118,12 @@
                         {/if}
                         <span>Filter duplicates</span>
                     </div>
-                </ToggleGroup.Item>
-                <ToggleGroup.Item
-                    value="decensor"
-                    class="group border-border bg-background-tertiary text-foreground-secondary hover:bg-background-secondary data-[state=on]:border-border data-[state=on]:bg-background-tertiary data-[state=on]:text-foreground hover:text-foreground min-w-[150px]
-					flex-grow rounded-lg border px-3 py-2 text-xs
-					font-medium transition"
+                </button>
+                <button
+                    type="button"
+                    onclick={() => decensor.set(!$decensor)}
+                    aria-pressed={$decensor}
+                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[150px]')}
                 >
                     <div class="flex items-center justify-center gap-2">
                         {#if $decensor}
@@ -129,32 +133,48 @@
                         {/if}
                         <span>Use decensored models</span>
                     </div>
-                </ToggleGroup.Item>
-                <ToggleGroup.Item
-                    value="perf-monitor"
-                    class="group border-border bg-background-tertiary text-foreground-secondary hover:bg-background-secondary data-[state=on]:border-border data-[state=on]:bg-background-tertiary hover:text-foreground min-w-[80px]
-					flex-grow rounded-lg border px-3 py-2 text-xs
-					font-medium transition"
-                    onclick={() => {
-                        const statsEl = document.getElementById('stats');
-                        if (statsEl) {
-                            statsEl.style.display = statsEl.style.display === 'block' ? 'none' : 'block';
-                        }
-                    }}
+                </button>
+                <button
+                    type="button"
+                    onclick={togglePerfMonitor}
+                    aria-pressed={showPerfMonitor}
+                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[80px]')}
                 >
-                    <div class="flex items-center justify-center gap-2 group-data-[state=on]:text-foreground">
-                        <Activity class="shrink-0 group-data-[state=on]:stroke-yellow-500" />
+                    <div class="flex items-center justify-center gap-2">
+                        <Activity class="shrink-0 {showPerfMonitor ? 'stroke-yellow-500' : ''}" />
                         <span>Performance monitor</span>
                     </div>
-                </ToggleGroup.Item>
-            </ToggleGroup.Root>
-            <div class="mt-2 flex w-full gap-2">
+                </button>
+            </div>
+            <div class="mt-2 flex w-full flex-wrap gap-2">
+                <button
+                    type="button"
+                    onclick={() => listDensity.set($listDensity === 'table' ? 'list' : 'table')}
+                    title="Switch to {$listDensity === 'table' ? 'list' : 'table'} view"
+                    aria-label="Switch to {$listDensity === 'table' ? 'list' : 'table'} view"
+                    class={cn(
+                        toggleVariants(),
+                        filterButtonClass,
+                        'min-w-[110px]',
+                    )}
+                >
+                    <div class="flex items-center justify-center gap-2">
+                        {#if $listDensity === 'table'}
+                            <Table class="shrink-0" />
+                            <span>Table view</span>
+                        {:else}
+                            <Rows3 class="shrink-0" />
+                            <span>List view</span>
+                        {/if}
+                    </div>
+                </button>
                 <button type="button" onclick={pickRandom} class={cn(
                         toggleVariants(),
-                        'group border-border bg-background-tertiary text-foreground-secondary hover:bg-background-secondary hover:text-foreground flex-grow rounded-lg border px-3 py-2 text-xs font-medium transition',
+                        filterButtonClass,
+                        'min-w-[110px]',
                     )}>
                     <div class="flex items-center justify-center gap-2">
-                        <Dices class="text-accent shrink-0" strokeWidth={1.75} />
+                        <Dices class="shrink-0" strokeWidth={1.75} />
                         <span>Random</span>
                     </div>
                 </button>
@@ -165,7 +185,8 @@
                     aria-disabled={!wikiUrl}
                     class={cn(
                         toggleVariants(),
-                        'group border-border bg-background-tertiary text-foreground-secondary hover:bg-background-secondary hover:text-foreground flex-grow rounded-lg border px-3 py-2 text-xs font-medium transition',
+                        filterButtonClass,
+                        'min-w-[110px]',
                     )}
                     class:pointer-events-none={!wikiUrl}
                     class:opacity-50={!wikiUrl}

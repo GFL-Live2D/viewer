@@ -85,7 +85,7 @@
 }
 
 .speed-draw-button[data-state='on']:hover {
-    background-color: var(--color-accent-secondary);
+    background-color: var(--accent-hover);
 }
 
 /* Speed Draw Icon Button Hover Effects */
