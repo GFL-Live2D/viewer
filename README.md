@@ -40,10 +40,10 @@ static/assets/
   audio/<char-id>/*.ogg             # Voice lines (optional)
 ```
 
-To point at a CDN instead, set `PUBLIC_ASSET_BASE_URL` (falls back to `/assets`):
+To point at a CDN instead, set `PUBLIC_CDN_URL` (falls back to `/assets`):
 
 ```bash
-PUBLIC_ASSET_BASE_URL=https://cdn.example.com
+PUBLIC_CDN_URL=https://cdn.example.com
 ```
 
 ## URL Parameters

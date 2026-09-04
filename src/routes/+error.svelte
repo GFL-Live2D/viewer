@@ -1,7 +1,7 @@
 <script lang="ts">
     import { page } from '$app/state';
 
-    const codeTokens = ['PUBLIC_ASSET_BASE_URL', 'static/assets/', 'bun install', 'bun run dev', 'README.md'];
+    const codeTokens = ['PUBLIC_CDN_URL', 'static/assets/', 'bun install', 'bun run dev', 'README.md'];
     const splitPattern = new RegExp(`(${codeTokens.map((t) => t.replace(/[/.]/g, '\\$&')).join('|')})`, 'g');
 
     let parts = $derived((page.error?.message ?? 'Unknown error').split(splitPattern).filter((part) => part !== ''));

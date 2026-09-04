@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 function assetsConfigured(): boolean {
-    if (env.PUBLIC_ASSET_BASE_URL) return true;
+    if (env.PUBLIC_CDN_URL) return true;
 
     const assetsDir = path.resolve('static/assets');
     return existsSync(assetsDir) && readdirSync(assetsDir).length > 0;
@@ -86,6 +86,6 @@ export async function loadGunData() {
         voiceData: voiceDataByModel,
         modelSearchTerms,
         variantsByModel,
-        assetBaseUrl: env.PUBLIC_ASSET_BASE_URL || '/assets',
+        assetBaseUrl: env.PUBLIC_CDN_URL || '/assets',
     };
 }
