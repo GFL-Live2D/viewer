@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy, untrack } from 'svelte';
+    import Fuse from 'fuse.js';
     import { slide } from 'svelte/transition';
     import { browser } from '$app/environment';
     import { Check, ChevronDown, Info, ImageUp, Link, ArrowLeftRight } from '@lucide/svelte';
@@ -189,48 +190,58 @@
 
     // Note: modelSearchTerms passed as prop, already computed server-side
 
+    type SearchableModel = Live2DModelIndex & { displayName: string; numericId: string; aliasTerms: string };
+
     // Compute filteredModels from store state and props
     let filteredModels = $derived.by(() => {
         const seenDirectories = new Set<string>();
 
-        return models
+        const candidates: SearchableModel[] = models
             .map((m: Live2DModelIndex) => ({
                 ...m,
                 displayName: m.gunName || String($modelNames[m.id] ?? m.code ?? m.id).replace(/_/g, ' '),
+                numericId: m.id.match(/\d+$/)?.[0] || '',
+                aliasTerms: modelSearchTerms[m.id] || '',
             }))
-            .filter((m: Live2DModelIndex & { displayName: string }) => {
-                if ($filterDuplicates) {
-                    // Filter out Mod_\d+ entries
-                    if (/Mod_\d+/i.test(m.code)) {
-                        return false;
-                    }
-                    // Filter out entries with duplicate directories
-                    if (seenDirectories.has(m.directory)) {
-                        return false;
-                    }
-                }
-
+            .filter((m: SearchableModel) => {
+                if (!$filterDuplicates) return true;
+                // Filter out Mod_\d+ entries
+                if (/Mod_\d+/i.test(m.code)) return false;
+                // Filter out entries with duplicate directories
+                if (seenDirectories.has(m.directory)) return false;
                 seenDirectories.add(m.directory);
+                return true;
+            });
 
-                const query = $searchQuery.toLowerCase();
-                const nameMatch = m.displayName.toLowerCase().includes(query);
-                const codeMatch = m.code.toLowerCase().includes(query);
-                const costumeMatch = (m.costumeName || '').toLowerCase().includes(query);
-                const aliasMatch = (modelSearchTerms[m.id] || '').toLowerCase().includes(query);
-
-                return nameMatch || codeMatch || costumeMatch || aliasMatch;
-            })
-            .sort((a: Live2DModelIndex & { displayName: string }, b: Live2DModelIndex & { displayName: string }) => {
+        const query = $searchQuery.trim();
+        if (!query) {
+            return candidates.sort((a, b) => {
                 if ($sortBy === 'gun') {
                     return a.displayName.localeCompare(b.displayName);
                 } else if ($sortBy === 'name') {
                     return (a.costumeName || '').localeCompare(b.costumeName || '');
                 } else {
-                    const idA = parseInt(a.id.match(/\d+$/)?.[0] || '0');
-                    const idB = parseInt(b.id.match(/\d+$/)?.[0] || '0');
-                    return idA - idB;
+                    return parseInt(a.numericId || '0') - parseInt(b.numericId || '0');
                 }
             });
+        }
+
+        // Sort-mode dropdown doubles as search priority, so its favoured field outranks
+        const weights: Record<'numericId' | 'displayName' | 'code' | 'costumeName' | 'aliasTerms', number> = {
+            numericId: $sortBy === 'id' ? 3 : 1,
+            displayName: $sortBy === 'gun' ? 3 : 1,
+            costumeName: $sortBy === 'name' ? 3 : 1,
+            code: 1,
+            aliasTerms: 1,
+        };
+
+        const fuse = new Fuse(candidates, {
+            keys: Object.entries(weights).map(([name, weight]) => ({ name, weight })),
+            threshold: 0.35,
+            ignoreLocation: true,
+        });
+
+        return fuse.search(query).map((result) => result.item);
     });
 
     let selectedModelName = $derived($modelNames[$selectedModel] ?? $selectedModel?.replace(/_/g, ' ') ?? '');

@@ -18,6 +18,7 @@
         "@pixi/ticker": "^7.4.0",
         "@types/stats.js": "^0.17.4",
         "fitty": "^2.4.2",
+        "fuse.js": "^7.5.0",
         "interactjs": "^1.10.27",
         "pixi.js": "^8.13.1",
         "stats.js": "^0.17.0",

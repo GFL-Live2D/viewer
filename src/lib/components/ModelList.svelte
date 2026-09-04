@@ -9,6 +9,7 @@
         modelNames,
         sortBy,
         preferredVariantKind,
+        searchQuery,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d';
 
@@ -112,6 +113,12 @@
     function onScroll() {
         checkScrollPosition();
     }
+
+    // Scroll to top whenever the search query changes, so new results are visible
+    $effect(() => {
+        $searchQuery;
+        scrollContainer?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
     // Auto-scroll when selection changes
     $effect(() => {

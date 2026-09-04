@@ -5,6 +5,7 @@ import voiceData from '$lib/data/voice.json';
 import aliasesData from '$lib/data/aliases.json';
 import variantsData from '$lib/data/variants.json';
 import costumesData from '$lib/data/costumes.json';
+import nameOverrides from '$lib/data/name-overrides.json';
 
 export interface Live2DModelIndex {
     id: string; // Unique ID: code_liveid (e.g. "G11Mod_1602_G11MOD")
@@ -41,6 +42,10 @@ export interface VoiceData {
     caption: string;
 }
 
+function applyNameOverride(name: string): string {
+    return (nameOverrides as Record<string, string>)[name] ?? name;
+}
+
 export async function getGunModelIndex(): Promise<Live2DModelIndex[]> {
     const gunNames = namesData as Record<string, { en_name: string; code: string }>;
     const costumes = costumesData as Record<string, string>;
@@ -69,7 +74,8 @@ export async function getGunModelIndex(): Promise<Live2DModelIndex[]> {
         }
 
         // Display name from STC 5005
-        const name = gunInfo?.en_name + (/Mod$|Mod_\d+$/i.test(entry.code) ? ' MOD3' : '');
+        const rawName = applyNameOverride(gunInfo?.en_name ?? '');
+        const name = rawName + (/Mod$|Mod_\d+$/i.test(entry.code) ? ' MOD3' : '');
 
         return {
             id: `${entry.code}_${entry.id}`, // Unique ID
@@ -77,7 +83,7 @@ export async function getGunModelIndex(): Promise<Live2DModelIndex[]> {
             directory: entry.directory,
             motions: entry.motions,
             gunName: name,
-            costumeName: costumeName || 'Neural Upgrade',
+            costumeName: applyNameOverride(costumeName || 'Neural Upgrade'),
         };
     });
 }
