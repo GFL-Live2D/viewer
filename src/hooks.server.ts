@@ -1,5 +1,10 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+
+export const handleError: HandleServerError = ({ error, event }) => {
+    console.error('[viewer error]', event.url.pathname, error);
+    return { message: 'Internal Error' };
+};
 
 // Leftmost label of the host, minus the port. Apex and bare hosts yield ''.
 const extractSubdomain = (host: string): string => {
