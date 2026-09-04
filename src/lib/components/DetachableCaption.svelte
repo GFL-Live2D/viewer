@@ -210,6 +210,9 @@
     <div
         use:portal
         bind:this={panelRef}
+        role="dialog"
+        aria-label="Detached caption"
+        tabindex="-1"
         onpointerdown={startDrag}
         class="detachable-panel border-border/40 bg-background/80 fixed z-50 flex flex-col rounded-xl border pt-1 pr-8 pb-1 pl-1 shadow-2xl ring-1 ring-white/5 select-none"
         style="left: {pos.x}px; top: {pos.y}px; width: {size.width}px; resize: horizontal; overflow: hidden; min-width: 200px; max-width: 100vw;"

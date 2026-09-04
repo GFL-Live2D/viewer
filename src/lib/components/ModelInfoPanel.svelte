@@ -8,7 +8,7 @@
         subdomainMode,
         subdomain,
     } from '$lib/stores/gun-page';
-    import { buildShareLink } from '$lib/shareLinks';
+    import { copyShareLink, displayVariant, otherVariantOf } from '$lib/modelSelection';
     import GunNameDisplay from '$lib/components/GunNameDisplay.svelte';
     import { Check, Link, ArrowLeftRight } from '@lucide/svelte';
     import fitty, { type FittyInstance } from 'fitty';
@@ -27,50 +27,27 @@
         return $modelNames[entry.id] || entry.code || entry.id || '';
     });
 
-    let currentDisplayVariant = $derived.by(() => {
-        const variant = $selectedVariant;
-        if (!variant) return '';
-        const v = variant.toLowerCase();
-        if (v === 'destroy') return 'damaged';
-        return variant;
-    });
+    let currentDisplayVariant = $derived($selectedVariant ? displayVariant($selectedVariant) : '');
 
     async function handleCopyLink() {
-        const entry = $selectedCharacterEntry;
-        if (!entry) return;
-
-        const link = buildShareLink(entry, {
-            protocol: window.location.protocol,
-            host: window.location.host,
+        const copied = await copyShareLink($selectedCharacterEntry, {
             subdomainMode: $subdomainMode,
             subdomain: $subdomain,
             variant: currentDisplayVariant,
             hideUI: false,
         });
+        if (!copied) return;
 
-        try {
-            await navigator.clipboard.writeText(link);
-            isCopied = true;
-            clearTimeout(copiedTimeout);
-            copiedTimeout = setTimeout(() => {
-                isCopied = false;
-            }, 2000);
-        } catch (err) {
-            console.error('Failed to copy link:', err);
-        }
+        isCopied = true;
+        clearTimeout(copiedTimeout);
+        copiedTimeout = setTimeout(() => {
+            isCopied = false;
+        }, 2000);
     }
 
-    function formatVariant(variant: string) {
-        const v = variant.toLowerCase();
-        return v === 'destroy' ? 'damaged' : v;
-    }
-
-    let otherVariant = $derived.by(() => {
-        const entry = $selectedCharacterEntry;
-        if (!entry) return undefined;
-        const variants = $variantsByModel[entry.directory] ?? [];
-        return variants.find((v) => v !== $selectedVariant);
-    });
+    let otherVariant = $derived(
+        otherVariantOf($selectedCharacterEntry, $selectedVariant, $variantsByModel),
+    );
 
     function handleSwapVariant() {
         const entry = $selectedCharacterEntry;
@@ -165,7 +142,7 @@
                     <button
                         onclick={handleSwapVariant}
                         class="text-foreground-secondary hover:text-foreground hover:bg-background-tertiary -mx-3 -my-1.5 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded px-3 py-1.5 text-left transition-colors"
-                        title="Switch to {formatVariant(otherVariant)}"
+                        title="Switch to {displayVariant(otherVariant)}"
                         aria-label="Switch variant"
                     >
                         <div class="flex w-4 shrink-0 justify-center">

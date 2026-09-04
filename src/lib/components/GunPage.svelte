@@ -22,9 +22,11 @@
     import PartsPanel from '$lib/components/PartsPanel.svelte';
     import RevealButton from '$lib/components/RevealButton.svelte';
     import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import FullscreenToggle from '$lib/components/FullscreenToggle.svelte';
     import TabbedPanel from '$lib/components/TabbedPanel.svelte';
     import ResizeHandle from '$lib/components/ResizeHandle.svelte';
     import { Live2DController, ModelLoadingState } from '$lib/live2d/Live2DController.svelte';
+    import { resolveModel } from '$lib/modelResolve';
     import names from '$lib/data/names.json';
     import censorRules from '$lib/data/censor.json';
     import * as Resizable from '$lib/components/ui/resizable';
@@ -50,7 +52,7 @@
         subdomain as storeSubdomain,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
-    import { buildShareLink } from '$lib/shareLinks';
+    import { copyShareLink, displayVariant, internalVariant, otherVariantOf } from '$lib/modelSelection';
 
     let {
         models,
@@ -328,42 +330,15 @@
     });
 
     function getDisplayVariant(variant: string) {
-        if (!variant) return '';
-        const v = variant.toLowerCase();
-        if (v === 'destroy') return 'damaged';
-        return variant;
+        return variant ? displayVariant(variant) : '';
     }
 
     function getInternalVariant(variant: string) {
-        if (!variant) return '';
-        const v = variant.toLowerCase();
-        if (v === 'damaged') return 'destroy';
-        return variant;
+        return variant ? internalVariant(variant) : '';
     }
 
     function findModelByQuery(query: string): Live2DModelIndex | undefined {
-        const target = (aliases[query] ?? query).toLowerCase();
-
-        const exact = models.find((m: Live2DModelIndex) => {
-            const code = m.code.toLowerCase();
-            return (
-                (m.gunName || '').toLowerCase() === target ||
-                code === target ||
-                code.replace(/_\d+$/, '') === target ||
-                m.directory.toLowerCase() === target ||
-                (m.costumeName || '').toLowerCase() === target
-            );
-        });
-        if (exact) return exact;
-
-        const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const cleanTarget = clean(target);
-        return models.find(
-            (m: Live2DModelIndex) =>
-                clean(m.gunName || '') === cleanTarget ||
-                clean(m.code) === cleanTarget ||
-                clean(m.costumeName || '') === cleanTarget,
-        );
+        return resolveModel(models, query, aliases) ?? undefined;
     }
 
     let currentDisplayVariant = $derived(getDisplayVariant($selectedVariant));
@@ -410,20 +385,15 @@
         return params;
     }
 
-    function handleCopyLink() {
-        const entry = $selectedCharacterEntry;
-        if (!entry) return;
-
-        const link = buildShareLink(entry, {
-            protocol: window.location.protocol,
-            host: window.location.host,
+    async function handleCopyLink() {
+        const copied = await copyShareLink($selectedCharacterEntry, {
             subdomainMode,
             subdomain,
             variant: currentDisplayVariant,
             hideUI,
         });
+        if (!copied) return;
 
-        navigator.clipboard.writeText(link);
         isCopied = true;
         setTimeout(() => (isCopied = false), 2000);
     }
@@ -470,12 +440,9 @@
         selectedCharacterEntry.set(entry ?? null);
     }
 
-    let otherVariant = $derived.by(() => {
-        const entry = $selectedCharacterEntry;
-        if (!entry) return undefined;
-        const variants = $variantsByModel[entry.directory] ?? [];
-        return variants.find((v) => v !== $selectedVariant);
-    });
+    let otherVariant = $derived(
+        otherVariantOf($selectedCharacterEntry, $selectedVariant, $variantsByModel),
+    );
 
     function handleSwapVariant() {
         const entry = $selectedCharacterEntry;
@@ -846,27 +813,34 @@
 
                 <!-- LEFT SPEED DIAL: Positioned at right edge of panel (slides with panel) -->
                 <div
-                    class="absolute top-4 left-full z-50 ml-4 flex flex-col gap-3 transition-opacity duration-600 ease-in-out"
+                    class="absolute top-4 left-full z-50 ml-4 flex flex-row items-start gap-3 transition-opacity duration-600 ease-in-out"
                     style="opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI ? 'none' : 'auto'};"
                 >
-                    <!-- Theme Toggle (tablet+) -->
-                    <div class="hidden md:block">
-                        <ThemeToggle />
+                    <div class="flex flex-col gap-3">
+                        <!-- Theme Toggle (tablet+) -->
+                        <div class="hidden md:block">
+                            <ThemeToggle />
+                        </div>
+
+                        <!-- Panel toggle chevron (tablet only, md-xl) - matches desktop styling -->
+                        <button
+                            onclick={togglePanel}
+                            class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:text-accent hidden h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:flex 2xl:hidden"
+                            title={isLeftPanelOpen ? 'Collapse list' : 'Expand list'}
+                            aria-label={isLeftPanelOpen ? 'Collapse model list panel' : 'Expand model list panel'}
+                            aria-pressed={isLeftPanelOpen}
+                        >
+                            <MorphingChevron class="h-5 w-5" pointsRight={!isLeftPanelOpen} />
+                        </button>
+
+                        <!-- Viewport Controls (chevron hidden on tablet, shown on desktop only) -->
+                        <ViewportControls hideChevronOnTablet={true} bind:isBgMoveMode />
                     </div>
 
-                    <!-- Panel toggle chevron (tablet only, md-xl) - matches desktop styling -->
-                    <button
-                        onclick={togglePanel}
-                        class="border-border bg-background-secondary/95 text-foreground-tertiary hover:border-accent hover:text-accent hidden h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:flex 2xl:hidden"
-                        title={isLeftPanelOpen ? 'Collapse list' : 'Expand list'}
-                        aria-label={isLeftPanelOpen ? 'Collapse model list panel' : 'Expand model list panel'}
-                        aria-pressed={isLeftPanelOpen}
-                    >
-                        <MorphingChevron class="h-5 w-5" pointsRight={!isLeftPanelOpen} />
-                    </button>
-
-                    <!-- Viewport Controls (chevron hidden on tablet, shown on desktop only) -->
-                    <ViewportControls hideChevronOnTablet={true} bind:isBgMoveMode />
+                    <!-- Fullscreen sits beside the theme toggle, tablet+ only to match it -->
+                    <div class="hidden md:block">
+                        <FullscreenToggle />
+                    </div>
                 </div>
             </div>
 
@@ -995,11 +969,14 @@
         <div class="pointer-events-none 2xl:hidden">
             <!-- Top left: Theme Toggle + Viewport Controls (mobile only) -->
             <div
-                class="pointer-events-auto fixed top-4 left-4 z-20 flex flex-col gap-3 transition-opacity duration-600 md:hidden"
+                class="pointer-events-auto fixed top-4 left-4 z-20 flex flex-row items-start gap-3 transition-opacity duration-600 md:hidden"
                 style="opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI ? 'none' : 'auto'};"
             >
-                <ThemeToggle />
-                <ViewportControls hideChevronOnTablet={false} hideMobileChevron={true} bind:isBgMoveMode />
+                <div class="flex flex-col gap-3">
+                    <ThemeToggle />
+                    <ViewportControls hideChevronOnTablet={false} hideMobileChevron={true} bind:isBgMoveMode />
+                </div>
+                <FullscreenToggle />
             </div>
 
             <!-- Top right: HideUI + BG controls -->

@@ -196,7 +196,7 @@
         bottomInset={overlayInsets.bottom}
     >
         <div class="text-center">
-            <img src="/gfloading.gif" class="mx-auto mb-4 h-24 w-24" />
+            <img src="/gfloading.gif" alt="" class="mx-auto mb-4 h-24 w-24" />
             <p class="text-foreground-secondary font-medium">{characterEntry?.code}</p>
             {#if isInitializing}
                 <p class="text-foreground-tertiary mt-2 text-sm">Initializing model</p>

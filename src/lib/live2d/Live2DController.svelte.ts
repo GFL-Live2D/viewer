@@ -100,7 +100,7 @@ export class Live2DController {
     private canvas: HTMLCanvasElement; // Store canvas reference
     private bgSprite: PIXI.Sprite | null = null; // Background sprite
     private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
-    private modelUrl: string | null = null; // model3.json URL Assets keyed the current model's textures by
+    private modelUrl: string | null = null; // model3.json URL of the currently loaded model
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
@@ -484,7 +484,6 @@ export class Live2DController {
             // Check if superseded after heavy network load
             if (this.loadId !== myLoadId) {
                 newModel.destroy({ children: true });
-                PIXI.Assets.unload(modelUrl).catch(() => {});
                 return false;
             }
 
@@ -547,13 +546,7 @@ export class Live2DController {
                 this.motionGroups.length === 0 || (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
             this.setForceLipSync(isIdleOnly);
 
-            // cleanupModel() clears the whole stage on every load, so re-attach the background
-            // sprite too (it survives the model swap, only the model/moc-derived state resets).
-            if (this.bgSprite) {
-                this.app.stage.addChildAt(this.bgSprite, 0);
-            }
             this.app.stage.addChild(this.model!);
-            // Bring caption text to front (above model)
             if (this.captionText) {
                 this.app.stage.addChild(this.captionText);
             }
@@ -2142,7 +2135,6 @@ export class Live2DController {
             } catch (e) {
                 // Already removed or not in stage
             }
-            const modelUrl = this.modelUrl;
             try {
                 this.model.destroy({ children: true });
             } catch (e) {
@@ -2150,18 +2142,12 @@ export class Live2DController {
             }
             this.model = undefined;
             this.modelUrl = null;
-            if (modelUrl) {
-                PIXI.Assets.unload(modelUrl).catch(() => {});
-            }
         }
         // Clear cached data
         this.motionMap = {};
         this.voiceMap = {};
         this.fileToMotionId = {};
         this.currentCharacterCode = '';
-
-        // Clear stage completely
-        this.app.stage.removeChildren();
     }
 
     private handleGlobalTouchMove = (e: TouchEvent) => {
