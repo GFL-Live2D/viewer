@@ -1,4 +1,7 @@
 {
+    "AK12": "AK-12",
+    "AN94": "AN-94",
+    "Burning-Eyed Gr G36c": "Burning-Eyed G36C",
     "GeneralLiu": "General Liu",
     "ColtWalker": "Colt Walker",
     "MartiniHenry": "Martini-Henry",
@@ -9,8 +12,12 @@
     "416": "HK416",
     "Five-seven": "Five-seveN",
     "JS 9 mm": "JS 9",
+    "Type64": "Type 64",
     "Type89": "Howa Type 89",
     "Type95": "Type 95",
     "Type97": "Type 97",
-    "Type97S": "Type 97 Shotgun"
+    "Type97S": "Type 97 Shotgun",
+    "Type56-1": "Type 56-1",
+    "Lee Enfield": "Lee-Enfield",
+    "Sakura": "Type 100"
 }

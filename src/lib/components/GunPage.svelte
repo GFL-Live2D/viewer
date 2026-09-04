@@ -785,7 +785,7 @@
                     {#if isDesktopWidth}
                         <!-- Desktop: Regular list -->
                         <GunPageHeader {baseHost} />
-                        <ModelFilters />
+                        <ModelFilters onSelectModel={selectModelVariant} />
                         <ModelList {models} onSelectModel={selectModelVariant} formatVariant={getDisplayVariant} />
                     {:else}
                         <!-- Tablet: Tabbed content -->
@@ -793,7 +793,7 @@
                             {#if activeTab === 'info'}
                                 <div class="custom-scrollbar flex h-full flex-col overflow-hidden">
                                     <GunPageHeader {baseHost} />
-                                    <ModelFilters />
+                                    <ModelFilters onSelectModel={selectModelVariant} />
                                     <ModelList
                                         {models}
                                         onSelectModel={selectModelVariant}
@@ -1086,7 +1086,7 @@
                 <TabbedPanel bind:activeTab>
                     {#if activeTab === 'info'}
                         <div class="custom-scrollbar flex h-full flex-col overflow-hidden">
-                            <ModelFilters />
+                            <ModelFilters onSelectModel={selectModelVariant} />
                             <ModelList
                                 {models}
                                 onSelectModel={selectModelVariant}
