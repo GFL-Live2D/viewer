@@ -12,7 +12,7 @@ This app is currently in beta. Assets are not included in this repository. You s
 - Pinch/scroll zoom, middle-click pan, right-click background drag.
 - Background image drop/paste.
 - Deep link: `?model=<gun-code>&variant=<variant-name>`.
-- Hide UI via `?ui=0` (controls reappear on hover near the bottom edge).
+- Hide UI via `?ui=0` (controls reappear on hover near the top right corner).
 - Iframe-friendly: the whole page is embeddable.
 - Keyboard shortcuts (M move, E focus, 0 reset background, Ctrl+V paste).
 

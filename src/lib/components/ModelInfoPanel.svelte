@@ -164,21 +164,21 @@
                 {#if otherVariant}
                     <button
                         onclick={handleSwapVariant}
-                        class="text-foreground-secondary hover:text-foreground hover:bg-background-tertiary -my-0.5 flex items-center gap-3 rounded py-0.5 pr-1.5 transition-colors"
+                        class="text-foreground-secondary hover:text-foreground hover:bg-background-tertiary -mx-3 -my-1.5 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded px-3 py-1.5 text-left transition-colors"
                         title="Switch to {formatVariant(otherVariant)}"
                         aria-label="Switch variant"
                     >
                         <div class="flex w-4 shrink-0 justify-center">
                             <ArrowLeftRight class="h-3.5 w-3.5" />
                         </div>
-                        <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
+                        <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
                             >{currentDisplayVariant || 'Normal'}</span
                         >
                     </button>
                 {:else}
                     <div class="text-foreground-secondary flex gap-3">
                         <div class="w-4 shrink-0"></div>
-                        <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
+                        <span class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
                             >{currentDisplayVariant || 'Normal'}</span
                         >
                     </div>

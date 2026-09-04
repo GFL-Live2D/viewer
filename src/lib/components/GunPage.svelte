@@ -1175,27 +1175,39 @@
                                                     >
                                                 </div>
                                             {/if}
-                                            <div class="text-foreground-secondary flex gap-3">
-                                                <div
-                                                    class="my-0.5 w-0.5 shrink-0 self-stretch"
-                                                    style="background: var(--text-tertiary);"
-                                                ></div>
-                                                <span class="py-0.5 leading-tight font-medium tracking-wide capitalize"
-                                                    >{currentDisplayVariant || 'Normal'}</span
-                                                >
-                                            </div>
-                                            {#if $selectedCharacterEntry?.code}
-                                                <div class="text-foreground-tertiary flex gap-3">
-                                                    <div
-                                                        class="my-0.5 w-0.5 shrink-0 self-stretch"
-                                                        style="background: var(--text-tertiary);"
-                                                    ></div>
-                                                    <span
-                                                        class="py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
-                                                        >{$selectedCharacterEntry.code}</span
+                                            <div class="flex items-center gap-3">
+                                                {#if $selectedCharacterEntry?.code}
+                                                    <div class="text-foreground-tertiary flex min-w-0 flex-1 gap-3">
+                                                        <div
+                                                            class="my-0.5 w-0.5 shrink-0 self-stretch"
+                                                            style="background: var(--text-tertiary);"
+                                                        ></div>
+                                                        <span
+                                                            class="truncate py-0.5 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
+                                                            >{$selectedCharacterEntry.code}</span
+                                                        >
+                                                    </div>
+                                                {/if}
+                                                {#if otherVariant}
+                                                    <button
+                                                        onclick={handleSwapVariant}
+                                                        class="text-foreground-secondary hover:text-foreground hover:bg-background-tertiary flex shrink-0 items-center gap-1.5 rounded px-2 py-1 transition-colors"
+                                                        title="Switch to {getDisplayVariant(otherVariant)}"
+                                                        aria-label="Switch variant"
                                                     >
-                                                </div>
-                                            {/if}
+                                                        <ArrowLeftRight class="h-3.5 w-3.5 shrink-0" />
+                                                        <span
+                                                            class="font-mono text-sm leading-tight font-medium tracking-widest uppercase"
+                                                            >{currentDisplayVariant || 'Normal'}</span
+                                                        >
+                                                    </button>
+                                                {:else}
+                                                    <span
+                                                        class="text-foreground-secondary shrink-0 px-2 font-mono text-sm leading-tight font-medium tracking-widest uppercase"
+                                                        >{currentDisplayVariant || 'Normal'}</span
+                                                    >
+                                                {/if}
+                                            </div>
                                         </div>
                                     </div>
                                 {/if}

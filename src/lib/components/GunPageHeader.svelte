@@ -126,7 +126,7 @@
                                         With variant: <code class="bg-background-tertiary rounded px-1">pa15.{apexHost}/?variant=damaged</code>
                                     </li>
                                     <li>
-                                        Hide UI on load: append <code class="bg-background-tertiary rounded px-1">?ui=0</code> (hover near the bottom of the window to reveal controls)
+                                        Hide UI on load: append <code class="bg-background-tertiary rounded px-1">?ui=0</code> (hover near the top right corner to reveal controls)
                                     </li>
                                 </ul>
                             {:else}
@@ -139,7 +139,7 @@
                                         With variant: <code class="bg-background-tertiary rounded px-1">{baseHost}/?model=pa-15&variant=damaged</code>
                                     </li>
                                     <li>
-                                        Hide UI on load: append <code class="bg-background-tertiary rounded px-1">&ui=0</code> (hover near the bottom of the window to reveal controls)
+                                        Hide UI on load: append <code class="bg-background-tertiary rounded px-1">&ui=0</code> (hover near the top right corner to reveal controls)
                                     </li>
                                 </ul>
                             {/if}
