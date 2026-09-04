@@ -1,5 +1,14 @@
 import type { Live2DModelIndex } from '$lib/server/live2d';
 
+// "destroy" is the internal name for what the UI and share links call "damaged"
+export function displayVariant(variant: string): string {
+    return variant.toLowerCase() === 'destroy' ? 'damaged' : variant;
+}
+
+export function internalVariant(variant: string): string {
+    return variant.toLowerCase() === 'damaged' ? 'destroy' : variant;
+}
+
 // Hostname labels and query values both lose punctuation, so keys are compared stripped
 export function normaliseKey(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9]/g, '');

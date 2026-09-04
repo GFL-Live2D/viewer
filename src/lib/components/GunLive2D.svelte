@@ -15,6 +15,7 @@
         canvas = $bindable<HTMLCanvasElement | undefined>(),
         isBgMoveMode = false, // Received from parent
         isInitializing = false, // Initializing state during controller recreation
+        displayOnly = false, // Embed mode: focus tracking and hitbox motions only
     } = $props();
 
     // Multi-touch drag tracking: cache active pointers to avoid resetting on second finger
@@ -36,7 +37,7 @@
 
     // Background manipulation owns pinch gestures while its move mode is active.
     $effect(() => {
-        controller?.setPinchZoomEnabled(!isBgMoveMode);
+        controller?.setPinchZoomEnabled(!isBgMoveMode && !displayOnly);
     });
 
     $effect(() => {
@@ -81,6 +82,7 @@
 
         // Middle Click: Always drag (force=true, always enabled)
         if (e.button === 1) {
+            if (displayOnly) return;
             e.preventDefault();
             const wasEmpty = activePointers.size === 0;
             // Only track primary pointer for drag (secondary pointers reserved for gestures)
@@ -159,6 +161,8 @@
     }
 
     function onWheel(e: WheelEvent) {
+        // Page scroll belongs to the embedding document when zoom is locked
+        if (displayOnly) return;
         if (isBgMoveMode) return; // Allow event to bubble / be handled by window listener
         if (!controller) return;
 

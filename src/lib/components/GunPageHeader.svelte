@@ -6,7 +6,7 @@
         subdomainMode,
         subdomain,
     } from '$lib/stores/gun-page';
-    import { apexHost as toApexHost, buildShareLink } from '$lib/shareLinks';
+    import { apexHost as toApexHost, buildEmbedLink } from '$lib/shareLinks';
     import type { Live2DModelIndex } from '$lib/server/live2d';
     import { Check, Copy, ImageDown, MousePointerClick } from '@lucide/svelte';
 
@@ -19,6 +19,7 @@
     let copied = $state(false);
     let copyTimeout: ReturnType<typeof setTimeout> | undefined;
 
+    let embedTransparent = $state(false);
     let openSections = $state(['about']);
     let openShortcuts = $state<string[]>([]);
     let openAccess = $state<string[]>([]);
@@ -37,18 +38,21 @@
         const entry = $selectedCharacterEntry ?? { code: 'pa-15' };
         const v = ($selectedVariant ?? '').toLowerCase();
 
-        return buildShareLink(entry as Live2DModelIndex, {
-            protocol: 'https:',
+        return buildEmbedLink(entry as Live2DModelIndex, {
+            protocol: typeof window === 'undefined' ? 'https:' : window.location.protocol,
             host: baseHost,
             subdomainMode: $subdomainMode,
             subdomain: $subdomain,
             variant: v === 'destroy' ? 'damaged' : v,
-            hideUI: true,
+            transparent: embedTransparent,
         });
     });
 
+    // Browsers paint an opaque iframe background, so a see-through embed has to clear it too
     let embedSnippet = $derived(
-        `<iframe src="${embedUrl}"\n        width="100%" height="600" frameborder="0"></iframe>`,
+        `<iframe src="${embedUrl}"\n        width="100%" height="600" frameborder="0"` +
+            (embedTransparent ? `\n        style="background: transparent"` : '') +
+            `></iframe>`,
     );
 
     async function copyEmbed() {
@@ -146,8 +150,14 @@
                             {/if}
                             <p class="mt-3 mb-1 font-medium text-foreground-secondary">Embedding</p>
                             <p class="mb-2">
-                                The viewer is iframe-friendly. Snippet below reflects the currently selected model:
+                                <code class="bg-background-tertiary rounded px-1">?only=</code> serves the model on its own:
+                                no panels, captions, zoom or pan, just focus tracking and tappable motions. Snippet below
+                                reflects the currently selected model:
                             </p>
+                            <label class="mb-2 flex items-center gap-2">
+                                <input type="checkbox" bind:checked={embedTransparent} class="accent-accent" />
+                                Transparent background
+                            </label>
                             <div class="bg-background-tertiary relative rounded p-2">
                                 <button
                                     type="button"

@@ -1,4 +1,5 @@
 import { getGunModelIndex, getAliases, getModelMotionAndVoiceData, getGunModelVariants } from '$lib/server/live2d';
+import type { Live2DModelIndex, MotionData, VoiceData } from '$lib/server/live2d';
 import { env } from '$env/dynamic/public';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -86,6 +87,41 @@ export async function loadGunData() {
         voiceData: voiceDataByModel,
         modelSearchTerms,
         variantsByModel,
+        assetBaseUrl: env.PUBLIC_CDN_URL || '/assets',
+    };
+}
+
+// ?only= renders one model, so just its variants and motion/voice rows are serialised
+export async function loadSingleModelData(model: Live2DModelIndex) {
+    if (!assetsConfigured()) return { assetsMissing: true as const };
+
+    const variants = await getGunModelVariants(model.directory);
+    const { motions, voice } = await getModelMotionAndVoiceData(model.motions || []);
+
+    const motionData: Record<string, Record<number, MotionData>> = {};
+    const voiceData: Record<string, Record<number, VoiceData>> = {};
+    for (const variant of variants) {
+        motionData[variant] = {};
+        voiceData[variant] = {};
+    }
+
+    for (const motionId of model.motions || []) {
+        const motion = motions[motionId];
+        if (!motion) continue;
+
+        const variant = motion.is_hurt ? 'destroy' : 'normal';
+        if (!motionData[variant]) continue;
+
+        motionData[variant][motionId] = motion;
+        if (voice[motionId]) voiceData[variant][motionId] = voice[motionId];
+    }
+
+    return {
+        assetsMissing: false as const,
+        model,
+        variants,
+        motionData,
+        voiceData,
         assetBaseUrl: env.PUBLIC_CDN_URL || '/assets',
     };
 }

@@ -12,8 +12,8 @@ This app is currently in beta. Assets are not included in this repository. You s
 - Pinch/scroll zoom, middle-click pan, right-click background drag.
 - Background image drop/paste.
 - Deep link: `?model=<gun-code>&variant=<variant-name>`.
-- Hide UI via `?ui=0` (controls reappear on hover near the top right corner).
-- Iframe-friendly: the whole page is embeddable.
+- Hide UI via `?ui=0`, or drop it entirely with `?only=<gun-code>`.
+- Iframe-friendly: the whole page is embeddable, optionally with a transparent background.
 - Keyboard shortcuts (M move, E focus, 0 reset background, Ctrl+V paste).
 
 ## Getting Started
@@ -48,28 +48,48 @@ PUBLIC_CDN_URL=https://cdn.example.com
 
 ## URL Parameters
 
-| Param     | Example            | Notes                                                                    |
-|-----------|--------------------|--------------------------------------------------------------------------|
-| `model`   | `?model=pa-15`     | Base code, full game code (`pa15_5802`), or directory name.              |
-| `variant` | `&variant=damaged` | Case-insensitive. `damaged` maps to internal `destroy`. Omit for normal. |
-| `ui`      | `&ui=0`            | Hide the model list and info panels on load.                             |
+| Param         | Example            | Notes                                                                        |
+|---------------|--------------------|------------------------------------------------------------------------------|
+| `model`       | `?model=pa-15`     | Base code, full game code (`pa15_5802`), directory name, or alias.           |
+| `only`        | `?only=pa-15`      | Display-only mode. Same matching as `model`, but a miss is a 404.            |
+| `variant`     | `&variant=damaged` | Case-insensitive. `damaged` maps to internal `destroy`. Omit for normal.     |
+| `ui`          | `&ui=0`            | Hide the model list and info panels on load. Ignored by `only`.              |
+| `transparent` | `&transparent=1`   | Transparent page background. `only` mode only.                               |
+
+A variant may also be given as a bare key, so `&damaged` is the same as `&variant=damaged`.
 
 Invalid `model` falls back to a random gun. Missing `variant` falls back to the model's default.
 
+### Display-only mode (`only`)
+
+`?only=<gun>` serves the viewer by itself without the control panels.
+
+Features only click and hold for focus tracking, and tapping a hitbox to play its motion and voice.
+Voice lines still play, with no caption text and no volume control.
+
+In subdomain mode the hostname already names the model, so `?only` is written bare and the
+subdomain resolves it: `https://pa15.example.com/?only&variant=damaged`.
+
 ## Embedding
 
-The viewer is iframe-friendly. Typical embed with UI hidden:
+The viewer is iframe-friendly. Typical embed, model only:
 
 ```html
 <iframe
-    src="https://your-host/?model=pa-15&ui=0"
+    src="https://your-host/?only=pa-15&transparent=1"
     width="100%" height="600"
     frameborder="0"
-    allow="clipboard-write"
 ></iframe>
 ```
 
-Hover near the bottom edge inside the iframe to reveal the controls without leaving the host page.
+`transparent=1` drops the page background so the model composites onto the host page. Give the
+iframe itself a transparent background too, since browsers paint one by default:
+
+```html
+<iframe src="..." style="background: transparent" allowtransparency="true"></iframe>
+```
+
+To embed the full viewer instead, use `?model=pa-15&ui=0`. That hides the panels on load but keeps them reachable (top right button).
 
 ### CORS / iframe headers
 

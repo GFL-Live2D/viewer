@@ -53,7 +53,8 @@
         subdomain as storeSubdomain,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/server/live2d.ts';
-    import { copyShareLink, displayVariant, internalVariant, otherVariantOf } from '$lib/modelSelection';
+    import { copyShareLink, displayVariant, otherVariantOf } from '$lib/modelSelection';
+    import { requestedVariant } from '$lib/variantQuery';
 
     let {
         models,
@@ -334,10 +335,6 @@
         return variant ? displayVariant(variant) : '';
     }
 
-    function getInternalVariant(variant: string) {
-        return variant ? internalVariant(variant) : '';
-    }
-
     function findModelByQuery(query: string): Live2DModelIndex | undefined {
         return resolveModel(models, query, aliases) ?? undefined;
     }
@@ -517,7 +514,7 @@
                 if (modelQuery) {
                     initialModel = findModelByQuery(modelQuery);
                 }
-                queryVariant = getInternalVariant(params.get('variant') ?? '');
+                queryVariant = requestedVariant(params);
             }
 
             if (!initialModel && subdomainModel) {
@@ -530,32 +527,13 @@
             }
 
             if (initialModel) {
-                // Determine default variant (?variant= first, then legacy bare-key query, then 'normal')
+                // Determine default variant (query first, then 'normal')
                 const variants = $variantsByModel[initialModel.directory] ?? [];
                 let targetVariant = '';
 
                 if (queryVariant) {
                     targetVariant =
                         variants.find((v) => v.toLowerCase() === queryVariant.toLowerCase()) || '';
-                }
-
-                if (!targetVariant && typeof window !== 'undefined') {
-                    const params = new URLSearchParams(window.location.search);
-                    for (const [key, value] of params) {
-                        if (key === 'model' || key === 'variant') continue;
-                        const searchKey = getInternalVariant(key);
-                        const searchValue = getInternalVariant(value);
-
-                        const match = variants.find(
-                            (v) =>
-                                v.toLowerCase() === searchKey.toLowerCase() ||
-                                v.toLowerCase() === searchValue.toLowerCase(),
-                        );
-                        if (match) {
-                            targetVariant = match;
-                            break;
-                        }
-                    }
                 }
 
                 if (!targetVariant) {

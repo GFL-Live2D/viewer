@@ -203,6 +203,8 @@ export class Live2DController {
     private defaultZoom = 1; // Default zoom from model metadata (Layout.Scale)
     private zoomSpring: Spring<number>;
 
+    private resizeObserver: ResizeObserver | null = null;
+
     // Gesture management
     private gestureManager: any = null;
     private pinchZoomEnabled = true;
@@ -225,6 +227,7 @@ export class Live2DController {
     private currentAudio: HTMLAudioElement | null = null;
     private audioPromiseCache: Map<string, Promise<string>> = new Map(); // key -> Promise<BlobURL>
     private audioProgressInterval: number | null = null; // For audio-only progress tracking
+    private audioPlayPending: boolean = false; // Held while an audio-only voiceline loads and plays
 
     // Resolves once `this.app` is initialized. PIXI v8's Application.init() is async,
     // so anything touching `this.app` must await this first.
@@ -328,6 +331,23 @@ export class Live2DController {
             this.updateCaptionLayout();
         }
     };
+
+    // Refitting recomputes the tuned placement for the new size, so it must not run where a
+    // viewer can pan or zoom, which it would discard
+    private handleAutoFit = () => {
+        if (!this.app.renderer || !this.model) return;
+
+        this.handleResize();
+        this.fitModelToScreen();
+    };
+
+    // An embedded canvas is resized by its parent page, which fires no window resize event
+    public setAutoFitOnResize(enabled: boolean) {
+        if (!enabled || this.resizeObserver || typeof ResizeObserver === 'undefined') return;
+
+        this.resizeObserver = new ResizeObserver(this.handleAutoFit);
+        this.resizeObserver.observe(this.canvas);
+    }
 
     private updateCaptionLayout() {
         if (!this.captionText) return;
@@ -553,10 +573,10 @@ export class Live2DController {
             this.state.loadingStep = 'Setting up';
             this.state.motionGroups = [...this.motionGroups]; // Update UI now that metadata is ready
 
-            // Default lip sync on for idle-only models, since there's no other motion to drive mouth movement.
+            // Borrowed and idle-only voicelines play as bare audio, so nothing else would move the mouth.
             const isIdleOnly =
                 this.motionGroups.length === 0 || (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
-            this.setForceLipSync(isIdleOnly);
+            this.setForceLipSync(isIdleOnly || this.shouldBorrowNormalVoice());
 
             this.app.stage.addChild(this.model!);
             if (this.captionText) {
@@ -998,22 +1018,24 @@ export class Live2DController {
     }
 
     private handleTap(hitAreas: string[]) {
-        if (hitAreas.length === 0) return;
         const model = this.model;
-        if (!model) return;
+        if (hitAreas.length === 0 || !model) {
+            this.stopAudioProgress(); // Release the slot the hit handler claimed
+            return;
+        }
 
-        // For idle-only models, play unmapped voicelines on body tap instead of motion
         const isIdleOnly = this.motionGroups.length === 0 ||
             (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
 
-        if (isIdleOnly && hitAreas.includes('body')) {
+        // Hit area names are arbitrary, so a lone "head" box may still cover the whole model
+        const hasTouchMotion = hitAreas.some((area) => this.findGroupsForHitArea(area).length > 0);
+
+        if ((isIdleOnly || this.shouldBorrowNormalVoice()) && !hasTouchMotion) {
             const unmappedVoicelines = this.getUnmappedVoicelines();
             if (unmappedVoicelines.length > 0) {
                 const randomIndex = Math.floor(Math.random() * unmappedVoicelines.length);
                 const voiceline = unmappedVoicelines[randomIndex];
-                // Reset state set by hit handler so playAudioOnly can set its own
-                this.state.showProgressBar = false;
-                this.state.isMotionPlaying = false;
+                // Hit handler already claimed the playback slot, so hold it across the async audio load
                 this.playAudioOnly(voiceline.motionId);
                 return;
             }
@@ -1041,7 +1063,10 @@ export class Live2DController {
 
         // Select group based on combined weights
         const groupNames = Object.keys(groupWeights);
-        if (groupNames.length === 0) return;
+        if (groupNames.length === 0) {
+            this.stopAudioProgress(); // Release the slot the hit handler claimed
+            return;
+        }
 
         const totalWeight = Object.values(groupWeights).reduce((sum, w) => sum + w, 0);
         let random = Math.random() * totalWeight;
@@ -1334,18 +1359,23 @@ export class Live2DController {
     }
 
     async playAudioOnly(motionId: number) {
-        // Prevent overlapping playback
-        if (this.state.showProgressBar) {
-            return;
-        }
+        // Claim the slot before any await, else rapid taps race through during the audio fetch
+        if (this.audioPlayPending) return;
+        this.audioPlayPending = true;
+        this.state.showProgressBar = true;
+        this.state.isMotionPlaying = true;
 
         const voice = this.voiceMap[motionId] || this.normalVoiceMap[motionId];
         if (!voice || !voice.voice_key) {
+            this.stopAudioProgress();
             return;
         }
 
         const model = this.model;
-        if (!model) return;
+        if (!model) {
+            this.stopAudioProgress();
+            return;
+        }
 
         try {
             const url = this.getAudioUrl(voice.char_code, voice.voice_key);
@@ -1364,7 +1394,10 @@ export class Live2DController {
                 }
             });
 
-            if (!played) return;
+            if (!played) {
+                this.stopAudioProgress();
+                return;
+            }
 
             const audioDuration = (model.internalModel?.motionManager as any)?.currentAudio?.duration ?? 0;
 
@@ -1404,6 +1437,7 @@ export class Live2DController {
     }
 
     private stopAudioProgress() {
+        this.audioPlayPending = false;
         if (this.audioProgressInterval !== null) {
             clearInterval(this.audioProgressInterval);
             this.audioProgressInterval = null;
@@ -1418,6 +1452,13 @@ export class Live2DController {
         this.state.caption = null;
         this.motionStartTime = 0;
         this.motionDuration = 0;
+    }
+
+    // A damaged variant with zero voice rows is an STC gap, not a silent character, so normal's lines stand in.
+    private shouldBorrowNormalVoice(): boolean {
+        if (this.currentVariant === 'normal') return false;
+        const hasOwnVoice = Object.values(this.voiceMap).some((v) => v && v.voice_key);
+        return !hasOwnVoice;
     }
 
     getUnmappedVoicelines(): Array<{ motionId: number; voice_key: string; caption: string }> {
@@ -1446,10 +1487,7 @@ export class Live2DController {
             }
         }
 
-        // Idle-only damaged variants lack reliable touch-reaction voice data in STC, so borrow normal's.
-        const isIdleOnly = this.motionGroups.length === 0 ||
-            (this.motionGroups.length === 1 && this.motionGroups[0] === 'Idle');
-        if (unmappedMap.size === 0 && isIdleOnly && this.currentVariant !== 'normal') {
+        if (unmappedMap.size === 0 && this.shouldBorrowNormalVoice()) {
             for (const [motionIdStr, voice] of Object.entries(this.normalVoiceMap)) {
                 const motionId = Number(motionIdStr);
                 if (!voice || !voice.voice_key) continue;
@@ -1888,6 +1926,8 @@ export class Live2DController {
             window.removeEventListener('touchmove', this.handleGlobalTouchMove);
             window.removeEventListener('pointerup', this.handleGlobalPointerUp);
         }
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
         if (this.gestureManager) {
             this.gestureManager.destroy();
             this.gestureManager = null;

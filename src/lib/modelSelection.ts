@@ -1,14 +1,7 @@
 import type { Live2DModelIndex } from '$lib/server/live2d';
 import { buildShareLink } from '$lib/shareLinks';
 
-// "destroy" is the internal name for what the UI and share links call "damaged"
-export function displayVariant(variant: string): string {
-    return variant.toLowerCase() === 'destroy' ? 'damaged' : variant;
-}
-
-export function internalVariant(variant: string): string {
-    return variant.toLowerCase() === 'damaged' ? 'destroy' : variant;
-}
+export { displayVariant, internalVariant } from '$lib/modelResolve';
 
 // The variant a swap button switches to, undefined when the model has only one
 export function otherVariantOf(
