@@ -412,6 +412,7 @@ export class Live2DController {
                 if (progress >= 1) {
                     this.state.isMotionPlaying = false;
                     this.state.motionProgress = 0;
+                    this.state.caption = null;
                 }
             } else {
                 this.state.motionProgress = 0;
@@ -1150,7 +1151,6 @@ export class Live2DController {
                         audio.onended = () => {
                             if (this.currentAudio === audio) {
                                 this.currentAudio = null;
-                                this.state.caption = null;
                             }
                         };
                     } catch (err) {
@@ -1342,7 +1342,6 @@ export class Live2DController {
             audio.onended = () => {
                 if (this.currentAudio === audio) {
                     this.currentAudio = null;
-                    this.state.caption = null;
                 }
             };
         } catch (err) {
@@ -1641,7 +1640,6 @@ export class Live2DController {
                         audio.onended = () => {
                             if (this.currentAudio === audio) {
                                 this.currentAudio = null;
-                                this.state.caption = null;
                             }
                         };
                     } catch (err) {
