@@ -100,6 +100,7 @@ export class Live2DController {
     private canvas: HTMLCanvasElement; // Store canvas reference
     private bgSprite: PIXI.Sprite | null = null; // Background sprite
     private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
+    private modelUrl: string | null = null; // model3.json URL Assets keyed the current model's textures by
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
@@ -482,7 +483,8 @@ export class Live2DController {
 
             // Check if superseded after heavy network load
             if (this.loadId !== myLoadId) {
-                newModel.destroy(); // Cleanup the orphaned model result
+                newModel.destroy({ children: true });
+                PIXI.Assets.unload(modelUrl).catch(() => {});
                 return false;
             }
 
@@ -492,6 +494,7 @@ export class Live2DController {
             // Cleanup previous model
             this.cleanupModel();
             this.model = newModel;
+            this.modelUrl = modelUrl;
             this.currentCharacterCode = entry.code;
             this.currentVariant = variant;
 
@@ -2139,13 +2142,17 @@ export class Live2DController {
             } catch (e) {
                 // Already removed or not in stage
             }
+            const modelUrl = this.modelUrl;
             try {
-                // Destroy with texture cleanup to release GPU memory and texture cache entries
-                this.model.destroy({ texture: true, baseTexture: true });
+                this.model.destroy({ children: true });
             } catch (e) {
                 // Already destroyed or partially initialized
             }
             this.model = undefined;
+            this.modelUrl = null;
+            if (modelUrl) {
+                PIXI.Assets.unload(modelUrl).catch(() => {});
+            }
         }
         // Clear cached data
         this.motionMap = {};

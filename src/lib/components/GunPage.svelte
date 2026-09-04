@@ -3,6 +3,7 @@
     import Fuse from 'fuse.js';
     import { slide } from 'svelte/transition';
     import { browser } from '$app/environment';
+    import { afterNavigate, replaceState } from '$app/navigation';
     import { Check, ChevronDown, Info, ImageUp, Link, ArrowLeftRight } from '@lucide/svelte';
 
     import MorphingChevron from '$lib/components/MorphingChevron.svelte';
@@ -382,16 +383,23 @@
         return t;
     });
 
-    function handleCopyLink() {
-        if (!$selectedCharacterEntry) return;
+    function buildModelParams(): URLSearchParams | null {
+        if (!$selectedCharacterEntry) return null;
 
-        const code = $selectedCharacterEntry.code.toLowerCase();
-        const origin = `${window.location.protocol}//${window.location.host}`;
-
-        const params = new URLSearchParams({ model: code });
+        const params = new URLSearchParams({ model: $selectedCharacterEntry.code.toLowerCase() });
         if (currentDisplayVariant && currentDisplayVariant !== 'normal') {
             params.set('variant', currentDisplayVariant);
         }
+        if (hideUI) params.set('ui', '0');
+
+        return params;
+    }
+
+    function handleCopyLink() {
+        const params = buildModelParams();
+        if (!params) return;
+
+        const origin = `${window.location.protocol}//${window.location.host}`;
 
         navigator.clipboard.writeText(`${origin}/?${params.toString()}`);
         isCopied = true;
@@ -561,6 +569,27 @@
                 selectModelVariant(initialModel.id, targetVariant);
                 scrollToSelection(initialModel.id);
             }
+        }
+    });
+
+    let routerReady = $state(false);
+    afterNavigate(() => (routerReady = true));
+
+    $effect(() => {
+        if (!routerReady || !$selectedModel) return;
+
+        const params = buildModelParams();
+        if (!params) return;
+
+        const existing = new URLSearchParams(window.location.search);
+        for (const [key, value] of existing) {
+            if (key === 'model' || key === 'variant' || key === 'ui') continue;
+            if (!params.has(key)) params.append(key, value);
+        }
+
+        const next = `${window.location.pathname}?${params.toString()}`;
+        if (next !== `${window.location.pathname}${window.location.search}`) {
+            replaceState(next, {});
         }
     });
 
