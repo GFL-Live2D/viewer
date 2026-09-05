@@ -1,7 +1,5 @@
 import live2dData from '$lib/data/live2d.json';
 import namesData from '$lib/data/names.json';
-import motionsData from '$lib/data/motions.json';
-import voiceData from '$lib/data/voice.json';
 import aliasesData from '$lib/data/aliases.json';
 import variantsData from '$lib/data/variants.json';
 import costumesData from '$lib/data/costumes.json';
@@ -103,7 +101,9 @@ export async function findModelByName(name: string): Promise<Live2DModelIndex | 
     return resolveModel(models, name, aliases);
 }
 
+// Imported on call so pages rendering a single model never pull the full table
 async function loadAllMotionData(): Promise<MotionData[]> {
+    const { default: motionsData } = await import('$lib/data/motions.json');
     return motionsData as MotionData[];
 }
 
@@ -115,6 +115,7 @@ interface RawVoiceData {
 }
 
 async function loadAllVoiceData(): Promise<Record<number, VoiceData>> {
+    const { default: voiceData } = await import('$lib/data/voice.json');
     const data = voiceData as RawVoiceData[];
     const cache: Record<number, VoiceData> = {};
 

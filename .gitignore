@@ -1,6 +1,7 @@
 .DS_Store
 node_modules
 dist
+build/
 test-results/
 package-lock.json
 yarn.lock
@@ -26,3 +27,6 @@ uv.lock
 
 static/assets/
 static/assets/sounds
+
+# Generated per-model data
+static/model-data/

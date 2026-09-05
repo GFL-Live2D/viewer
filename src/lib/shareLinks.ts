@@ -1,4 +1,4 @@
-import type { Live2DModelIndex } from '$lib/server/live2d';
+import type { Live2DModelIndex } from '$lib/model-data/live2d';
 import { shareLabel } from '$lib/modelResolve';
 
 export interface ShareContext {

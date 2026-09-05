@@ -253,6 +253,9 @@ export class Live2DController {
         window.addEventListener('resize', this.handleResize);
 
         this.initPromise = this.initPixi();
+        // Rejection is surfaced by whoever awaits initPromise, this only stops the
+        // unhandled rejection fired when nothing is awaiting it yet.
+        this.initPromise.catch(() => {});
     }
 
     private async initPixi() {
@@ -266,6 +269,14 @@ export class Live2DController {
         const { GifSource } = await import('pixi.js/gif');
         this.GifSource = GifSource;
 
+        // Cubism draws through raw GL calls, so the canvas fallback renderer can never work.
+        // Failing here beats letting the engine throw once per frame from inside the ticker.
+        if (!PIXI.isWebGLSupported()) {
+            throw new Error(
+                'WebGL is unavailable, so this model cannot be rendered. Please enable WebGL in your browser and reload.',
+            );
+        }
+
         const dpr = window.devicePixelRatio || 1;
         await this.app.init({
             canvas: this.canvas,
@@ -275,6 +286,7 @@ export class Live2DController {
             autoDensity: true,
             antialias: false,
             backgroundAlpha: 0,
+            preference: 'webgl',
         });
 
         // Auto-start render with spring update loop
@@ -437,10 +449,11 @@ export class Live2DController {
             this.state.loading = ModelLoadingState.IDLE;
         }
 
-        await this.initPromise;
-        if (this.loadId !== myLoadId) return false;
-
         try {
+            // Inside the try so a renderer init failure reaches the error overlay
+            await this.initPromise;
+            if (this.loadId !== myLoadId) return false;
+
             // Stop any currently playing audio immediately
             this.stopAudio();
 

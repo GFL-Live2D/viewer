@@ -1,6 +1,6 @@
-import type { Live2DModelIndex } from '$lib/server/live2d';
+import type { Live2DModelIndex } from '$lib/model-data/live2d';
 import { buildShareLink } from '$lib/shareLinks';
-import { env } from '$env/dynamic/public';
+import { env } from '$lib/publicEnv';
 
 export { displayVariant, internalVariant } from '$lib/modelResolve';
 

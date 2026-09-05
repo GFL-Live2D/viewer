@@ -2,7 +2,7 @@
     import { onDestroy } from 'svelte';
     import GunLive2D from '$lib/components/GunLive2D.svelte';
     import { Live2DController } from '$lib/live2d/Live2DController.svelte';
-    import type { Live2DModelIndex } from '$lib/server/live2d';
+    import type { Live2DModelIndex } from '$lib/model-data/live2d';
 
     let {
         model,

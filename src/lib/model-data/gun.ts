@@ -1,14 +1,18 @@
-import { getGunModelIndex, getAliases, getModelMotionAndVoiceData, getGunModelVariants } from '$lib/server/live2d';
-import type { Live2DModelIndex, MotionData, VoiceData } from '$lib/server/live2d';
-import { env } from '$env/dynamic/public';
-import { existsSync, readdirSync } from 'node:fs';
-import path from 'node:path';
+import { getGunModelIndex, getAliases, getModelMotionAndVoiceData, getGunModelVariants } from '$lib/model-data/live2d';
+import type { Live2DModelIndex, MotionData, VoiceData } from '$lib/model-data/live2d';
+import { env, PUBLIC_MIRROR_URL } from '$lib/publicEnv';
+import { base } from '$app/paths';
+
+// A static build has no server to serve static/assets, so it falls back to the mirror
+const STATIC_BUILD = import.meta.env.VITE_BUILD_TARGET === 'static';
+
+function assetBaseUrl(): string {
+    if (env.PUBLIC_CDN_URL) return env.PUBLIC_CDN_URL;
+    return STATIC_BUILD ? PUBLIC_MIRROR_URL : '/assets';
+}
 
 function assetsConfigured(): boolean {
-    if (env.PUBLIC_CDN_URL) return true;
-
-    const assetsDir = path.resolve('static/assets');
-    return existsSync(assetsDir) && readdirSync(assetsDir).length > 0;
+    return Boolean(env.PUBLIC_CDN_URL) || STATIC_BUILD || import.meta.env.DEV;
 }
 
 export async function loadGunData() {
@@ -87,34 +91,26 @@ export async function loadGunData() {
         voiceData: voiceDataByModel,
         modelSearchTerms,
         variantsByModel,
-        assetBaseUrl: env.PUBLIC_CDN_URL || '/assets',
+        assetBaseUrl: assetBaseUrl(),
     };
 }
 
-// ?only= renders one model, so just its variants and motion/voice rows are serialised
-export async function loadSingleModelData(model: Live2DModelIndex) {
+interface SplitModelData {
+    variants: string[];
+    motionData: Record<string, Record<number, MotionData>>;
+    voiceData: Record<string, Record<number, VoiceData>>;
+}
+
+// One model renders from its own generated file, so the full motion table never ships
+export async function loadSingleModelData(
+    model: Live2DModelIndex,
+    fetcher: typeof fetch = fetch,
+) {
     if (!assetsConfigured()) return { assetsMissing: true as const };
 
-    const variants = await getGunModelVariants(model.directory);
-    const { motions, voice } = await getModelMotionAndVoiceData(model.motions || []);
-
-    const motionData: Record<string, Record<number, MotionData>> = {};
-    const voiceData: Record<string, Record<number, VoiceData>> = {};
-    for (const variant of variants) {
-        motionData[variant] = {};
-        voiceData[variant] = {};
-    }
-
-    for (const motionId of model.motions || []) {
-        const motion = motions[motionId];
-        if (!motion) continue;
-
-        const variant = motion.is_hurt ? 'destroy' : 'normal';
-        if (!motionData[variant]) continue;
-
-        motionData[variant][motionId] = motion;
-        if (voice[motionId]) voiceData[variant][motionId] = voice[motionId];
-    }
+    const res = await fetcher(`${base}/model-data/${model.id}.json`);
+    if (!res.ok) throw new Error(`No data file for ${model.id}`);
+    const { variants, motionData, voiceData } = (await res.json()) as SplitModelData;
 
     return {
         assetsMissing: false as const,
@@ -122,6 +118,6 @@ export async function loadSingleModelData(model: Live2DModelIndex) {
         variants,
         motionData,
         voiceData,
-        assetBaseUrl: env.PUBLIC_CDN_URL || '/assets',
+        assetBaseUrl: assetBaseUrl(),
     };
 }

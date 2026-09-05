@@ -12,7 +12,7 @@
         searchQuery,
         listDensity,
     } from '$lib/stores/gun-page';
-    import type { Live2DModelIndex } from '$lib/server/live2d';
+    import type { Live2DModelIndex } from '$lib/model-data/live2d';
 
     let {
         models = [],

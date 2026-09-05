@@ -1,0 +1,31 @@
+name: Trigger Pages deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: trigger-pages
+  cancel-in-progress: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint token for the Pages repo
+        id: token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: '4836441'
+          private-key: ${{ secrets.PAGES_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: GFL-Live2D.github.io
+
+      - name: Dispatch
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh api repos/${{ github.repository_owner }}/GFL-Live2D.github.io/dispatches \
+            -f event_type=viewer-push \
+            -F client_payload[sha]=${{ github.sha }}

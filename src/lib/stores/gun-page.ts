@@ -2,7 +2,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { SORT_BY_STORAGE_KEY, parseSortBy, type SortBy } from '$lib/sortBy';
 import type { Live2DController } from '$lib/live2d/Live2DController.svelte';
-import type { Live2DModelIndex } from '$lib/server/live2d';
+import type { Live2DModelIndex } from '$lib/model-data/live2d';
 
 // Controller instance (single source of truth for model state)
 export const controller = writable<Live2DController | undefined>(undefined);

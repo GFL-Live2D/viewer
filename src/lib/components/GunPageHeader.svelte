@@ -7,8 +7,8 @@
         subdomain,
     } from '$lib/stores/gun-page';
     import { apexHost as toApexHost, buildEmbedLink } from '$lib/shareLinks';
-    import { env } from '$env/dynamic/public';
-    import type { Live2DModelIndex } from '$lib/server/live2d';
+    import { env } from '$lib/publicEnv';
+    import type { Live2DModelIndex } from '$lib/model-data/live2d';
     import { Check, Copy, ImageDown, MousePointerClick } from '@lucide/svelte';
 
     let { baseHost } = $props<{

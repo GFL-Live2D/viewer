@@ -1,4 +1,4 @@
-import type { Live2DModelIndex } from '$lib/server/live2d';
+import type { Live2DModelIndex } from '$lib/model-data/live2d';
 
 // "destroy" is the internal name for what the UI and share links call "damaged"
 export function displayVariant(variant: string): string {

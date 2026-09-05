@@ -7,7 +7,10 @@
     "license": "MIT",
     "scripts": {
         "dev": "bunx --bun vite dev",
+        "predev": "bun run scripts/split-model-data.ts",
+        "prebuild": "bun run scripts/split-model-data.ts",
         "build": "bunx --bun vite build",
+        "build:static": "bun run scripts/split-model-data.ts && BUILD_TARGET=static bunx --bun vite build",
         "preview": "bunx --bun vite preview",
         "prepare": "svelte-kit sync || echo ''",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
@@ -26,6 +29,7 @@
     },
     "devDependencies": {
         "@sveltejs/adapter-node": "^5.4.0",
+        "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.70.3",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
         "@tailwindcss/vite": "^4.1.14",

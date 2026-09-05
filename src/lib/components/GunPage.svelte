@@ -52,7 +52,7 @@
         subdomainMode as storeSubdomainMode,
         subdomain as storeSubdomain,
     } from '$lib/stores/gun-page';
-    import type { Live2DModelIndex } from '$lib/server/live2d.ts';
+    import type { Live2DModelIndex } from '$lib/model-data/live2d.ts';
     import { copyShareLink, displayVariant, otherVariantOf } from '$lib/modelSelection';
     import { requestedVariant } from '$lib/variantQuery';
 
