@@ -4,6 +4,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     plugins: [tailwindcss(), sveltekit()],
+    // publicEnv reads these off import.meta.env, which Vite gates behind a prefix allowlist
+    envPrefix: ['VITE_', 'PUBLIC_'],
     define: {
         global: 'window',
         'import.meta.env.VITE_BUILD_TARGET': JSON.stringify(process.env.BUILD_TARGET ?? ''),

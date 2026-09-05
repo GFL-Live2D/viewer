@@ -1,4 +1,6 @@
-import { getGunModelIndex, getAliases, getModelMotionAndVoiceData, getGunModelVariants } from '$lib/model-data/live2d';
+// Every page loads the index here and fetches one model's motions separately.
+// The full motion table is ~1.8 MiB across 238 models, too big to inline in any payload.
+import { getGunModelIndex, getAliases, getGunModelVariants } from '$lib/model-data/live2d';
 import type { Live2DModelIndex, MotionData, VoiceData } from '$lib/model-data/live2d';
 import { env, PUBLIC_MIRROR_URL } from '$lib/publicEnv';
 import { base } from '$app/paths';
@@ -20,14 +22,6 @@ export async function loadGunData() {
 
     const [models, aliases] = await Promise.all([getGunModelIndex(), getAliases()]);
 
-    // Collect all unique motion IDs from all models to hydrate motion/voice data
-    const allMotionIds = new Set<number>();
-    for (const model of models) {
-        for (const id of model.motions || []) {
-            allMotionIds.add(id);
-        }
-    }
-
     // Pre-compute model search terms
     const modelSearchTerms: Record<string, string> = {};
     for (const model of models) {
@@ -45,50 +39,17 @@ export async function loadGunData() {
         modelSearchTerms[model.id] = associatedAliases.join(' ');
     }
 
-    // Load motion and voice data server-side (stays in memory, only serializes what's needed)
-    const { motions, voice } = await getModelMotionAndVoiceData(Array.from(allMotionIds));
-
-    // Load all variants for all models server-side
+    // The list renders every model's variant buttons, so all of them are needed up front
     const variantsByModel: Record<string, string[]> = {};
     const variantPromises = models.map(async (model) => {
         variantsByModel[model.directory] = await getGunModelVariants(model.directory);
     });
     await Promise.all(variantPromises);
 
-    // Pre-filtered by model/variant using STC 5037's is_hurt flag; motion filenames collide across variants.
-    const motionDataByModel: Record<string, Record<string, Record<number, any>>> = {};
-    const voiceDataByModel: Record<string, Record<string, Record<number, any>>> = {};
-
-    for (const model of models) {
-        motionDataByModel[model.id] = {};
-        voiceDataByModel[model.id] = {};
-
-        const variantNames = variantsByModel[model.directory] || [];
-        for (const variant of variantNames) {
-            motionDataByModel[model.id][variant] = {};
-            voiceDataByModel[model.id][variant] = {};
-        }
-
-        for (const motionId of model.motions || []) {
-            const motion = motions[motionId];
-            if (!motion) continue;
-
-            const variant = motion.is_hurt ? 'destroy' : 'normal';
-            if (!motionDataByModel[model.id][variant]) continue;
-
-            motionDataByModel[model.id][variant][motionId] = motion;
-            if (voice[motionId]) {
-                voiceDataByModel[model.id][variant][motionId] = voice[motionId];
-            }
-        }
-    }
-
     return {
         assetsMissing: false,
         models,
         aliases,
-        motionData: motionDataByModel,
-        voiceData: voiceDataByModel,
         modelSearchTerms,
         variantsByModel,
         assetBaseUrl: assetBaseUrl(),
@@ -101,7 +62,7 @@ interface SplitModelData {
     voiceData: Record<string, Record<number, VoiceData>>;
 }
 
-// One model renders from its own generated file, so the full motion table never ships
+// Files come from split-model-data.ts. Callers must handle the load being async
 export async function loadSingleModelData(
     model: Live2DModelIndex,
     fetcher: typeof fetch = fetch,

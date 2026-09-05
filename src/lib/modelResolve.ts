@@ -21,6 +21,20 @@ export function shareLabel(entry: Pick<Live2DModelIndex, 'code' | 'costumeName'>
     return normaliseKey(entry.costumeName);
 }
 
+// Hyphens survive normaliseKey's stripping, so a readable path still matches a flat one
+export function pathSlug(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function modelSlugs(entry: Live2DModelIndex): string[] {
+    const names = [entry.costumeName, entry.gunName, entry.code, entry.directory];
+    const slugs = names.filter((n): n is string => !!n).map(pathSlug);
+    return [...new Set(slugs.filter(Boolean))];
+}
+
 export function resolveModel(
     models: Live2DModelIndex[],
     name: string,

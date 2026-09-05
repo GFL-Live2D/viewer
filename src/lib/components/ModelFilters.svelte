@@ -16,6 +16,7 @@
         selectedCharacterEntry,
         modelNames,
         listDensity,
+        controller,
     } from '$lib/stores/gun-page';
 
     let { onSelectModel = (modelId: string, variant: string) => {} } = $props<{
@@ -29,8 +30,7 @@
 
     function togglePerfMonitor() {
         showPerfMonitor = !showPerfMonitor;
-        const statsEl = document.getElementById('stats');
-        if (statsEl) statsEl.style.display = showPerfMonitor ? 'block' : 'none';
+        $controller?.setPerfMonitor(showPerfMonitor);
     }
 
     function pickRandom() {

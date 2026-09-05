@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Live2DController, ModelLoadingState, ZOOM_MIN, ZOOM_MAX } from '$lib/live2d/Live2DController.svelte';
     import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
+    import ErrorOverlay from '$lib/components/ErrorOverlay.svelte';
 
     // Props (runes mode)
     let {
@@ -25,8 +26,11 @@
     // Guard against infinite loops by checking signature
     let lastLoadedSignature = '';
 
+    let awaitingData = $derived(!!characterEntry && !!variant && !motionData);
+
+    // Motion data arrives from its own fetch, so loading waits for it to land
     $effect(() => {
-        if (controller && characterEntry && variant) {
+        if (controller && characterEntry && variant && motionData) {
             const signature = `${characterEntry.id}-${variant}`;
             if (signature !== lastLoadedSignature) {
                 lastLoadedSignature = signature;
@@ -193,7 +197,7 @@
 ></canvas>
 
 <!-- Loading Overlay -->
-{#if controller?.state.loading === ModelLoadingState.LOADING || isInitializing}
+{#if controller?.state.loading === ModelLoadingState.LOADING || isInitializing || awaitingData}
     <CanvasOverlay
         leftInset={overlayInsets.left}
         rightInset={overlayInsets.right}
@@ -213,19 +217,11 @@
 
 <!-- Error Overlay -->
 {#if controller?.state.loading === ModelLoadingState.ERROR}
-    <CanvasOverlay
-        bg="bg-background"
-        pointerEvents="pointer-events-auto"
+    <ErrorOverlay
+        message={controller.state.error}
+        onRetry={() => reload()}
         leftInset={overlayInsets.left}
         rightInset={overlayInsets.right}
         bottomInset={overlayInsets.bottom}
-    >
-        <div class="max-w-md text-center">
-            <h2 class="mb-2 text-2xl font-bold text-red-400">Error</h2>
-            <p class="text-foreground-tertiary mb-6 text-sm">{controller.state.error}</p>
-            <button onclick={() => reload()} class="bg-accent hover:bg-accent-hover rounded px-4 py-2 text-white"
-                >Retry</button
-            >
-        </div>
-    </CanvasOverlay>
+    />
 {/if}

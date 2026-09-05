@@ -1,6 +1,9 @@
 import { env } from '$lib/publicEnv';
 
-export const subdomainMode = env.PUBLIC_SUBDOMAIN_MODE === '1';
+// A static build has one origin and no wildcard DNS, so hostnames can never name a model
+const STATIC_BUILD = import.meta.env.VITE_BUILD_TARGET === 'static';
+
+export const subdomainMode = !STATIC_BUILD && env.PUBLIC_SUBDOMAIN_MODE === '1';
 
 // Leftmost label of the host, minus the port. Apex and bare hosts yield ''.
 export function extractSubdomain(host: string): string {

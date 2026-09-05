@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { EntryGenerator, PageLoad } from './$types';
 import { loadSingleModelData } from '$lib/model-data/gun';
 import { findModelByName, getGunModelIndex, getGunModelVariants } from '$lib/model-data/live2d';
-import { displayVariant, internalVariant, shareLabel } from '$lib/modelResolve';
+import { displayVariant, internalVariant, modelSlugs } from '$lib/modelResolve';
 import { resolveVariant } from '$lib/model-data/variantPick';
 
 export const prerender = true;
@@ -12,7 +12,9 @@ export const entries: EntryGenerator = async () => {
     const paths = await Promise.all(
         models.map(async (m) => {
             const variants = await getGunModelVariants(m.directory);
-            return variants.map((v) => ({ model: shareLabel(m), variant: displayVariant(v) }));
+            return modelSlugs(m).flatMap((model) =>
+                variants.map((v) => ({ model, variant: displayVariant(v) })),
+            );
         }),
     );
     return paths.flat();

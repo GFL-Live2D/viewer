@@ -36,7 +36,6 @@
 </script>
 
 <svelte:head>
-    <title>{model.gunName || model.code}</title>
     {#if transparent}
         <!-- The canvas already clears to alpha 0, so only the page beneath it has to give way -->
         <style>

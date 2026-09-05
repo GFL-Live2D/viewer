@@ -108,6 +108,8 @@ export class Live2DController {
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
     private captionText: PIXI.Text | null = null; // Caption text overlay
     private captionInsets = { left: 0, right: 0, bottom: 0 };
+    private stats: Stats | null = null;
+    private statsTick: (() => void) | null = null;
     private isCanvasCaptionSuppressed = false;
 
     // State (Using getters/setters effectively for reactivity if needed, or just public properties)
@@ -310,16 +312,6 @@ export class Live2DController {
         this.app.stage.addChild(this.captionText);
         this.updateCaptionLayout();
 
-        // Initialize performance monitor
-        if (typeof window !== 'undefined') {
-            const stats = new Stats();
-            stats.showPanel(0); // 0 = fps, 1 = ms, 2 = mb
-            stats.dom.id = 'stats';
-            document.body.appendChild(stats.dom);
-            this.app.ticker.add(() => {
-                stats.update();
-            });
-        }
     }
 
     private async initializeCubism4() {
@@ -1935,6 +1927,29 @@ export class Live2DController {
         this.defaultZoom = 1.0;
     }
 
+    // Panel is built on first enable so views without the toggle never show one
+    setPerfMonitor(enabled: boolean) {
+        if (typeof window === 'undefined') return;
+
+        if (!enabled) {
+            if (this.statsTick) this.app.ticker.remove(this.statsTick);
+            this.stats?.dom.remove();
+            this.stats = null;
+            this.statsTick = null;
+            return;
+        }
+
+        if (this.stats) return;
+
+        const stats = new Stats();
+        stats.showPanel(0); // 0 = fps, 1 = ms, 2 = mb
+        stats.dom.id = 'stats';
+        document.body.appendChild(stats.dom);
+        this.stats = stats;
+        this.statsTick = () => stats.update();
+        this.app.ticker.add(this.statsTick);
+    }
+
     cleanup() {
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', this.handleResize);
@@ -1948,6 +1963,7 @@ export class Live2DController {
             this.gestureManager.destroy();
             this.gestureManager = null;
         }
+        this.setPerfMonitor(false);
         this.stopAudio();
         this.cleanupModel();
         try {

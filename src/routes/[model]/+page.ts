@@ -2,14 +2,14 @@ import { error } from '@sveltejs/kit';
 import type { EntryGenerator, PageLoad } from './$types';
 import { loadSingleModelData } from '$lib/model-data/gun';
 import { findModelByName, getGunModelIndex } from '$lib/model-data/live2d';
-import { shareLabel } from '$lib/modelResolve';
+import { modelSlugs } from '$lib/modelResolve';
 import { resolveVariant } from '$lib/model-data/variantPick';
 
 export const prerender = true;
 
 export const entries: EntryGenerator = async () => {
     const models = await getGunModelIndex();
-    return models.map((m) => ({ model: shareLabel(m) }));
+    return models.flatMap((m) => modelSlugs(m).map((model) => ({ model })));
 };
 
 export const load: PageLoad = async ({ params, fetch }) => {

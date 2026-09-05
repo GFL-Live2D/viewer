@@ -53,14 +53,13 @@
         subdomain as storeSubdomain,
     } from '$lib/stores/gun-page';
     import type { Live2DModelIndex } from '$lib/model-data/live2d.ts';
+    import { loadSingleModelData } from '$lib/model-data/gun';
     import { copyShareLink, displayVariant, otherVariantOf } from '$lib/modelSelection';
     import { requestedVariant } from '$lib/variantQuery';
 
     let {
         models,
         aliases = {},
-        motionData,
-        voiceData,
         modelSearchTerms,
         variantsByModel: variantsByModelProp,
         assetBaseUrl,
@@ -71,8 +70,6 @@
     } = $props<{
         models: Live2DModelIndex[];
         aliases: Record<string, string>;
-        motionData: Record<string, Record<string, Record<number, any>>>;
-        voiceData: Record<string, Record<string, Record<number, any>>>;
         modelSearchTerms: Record<string, string>;
         variantsByModel: Record<string, string[]>;
         assetBaseUrl: string;
@@ -266,17 +263,49 @@
 
     let selectedModelName = $derived($modelNames[$selectedModel] ?? $selectedModel?.replace(/_/g, ' ') ?? '');
 
-    // Motion and voice data pre-filtered server-side by model ID and variant
-    let filteredMotionData = $derived(
-        $selectedCharacterEntry ? motionData[$selectedCharacterEntry.id]?.[$selectedVariant] : undefined,
+    let loadedModelData = $state<{ id: string; motionData: any; voiceData: any } | null>(null);
+
+    $effect(() => {
+        const entry = $selectedCharacterEntry;
+        if (!entry) return;
+        if (untrack(() => loadedModelData)?.id === entry.id) return;
+
+        let stale = false;
+        loadSingleModelData(entry)
+            .then((data) => {
+                if (stale) return;
+                if (data.assetsMissing) {
+                    if (controller) {
+                        controller.state.error = 'No Live2D assets are configured for this deployment.';
+                        controller.state.loading = ModelLoadingState.ERROR;
+                    }
+                    return;
+                }
+                loadedModelData = {
+                    id: entry.id,
+                    motionData: data.motionData,
+                    voiceData: data.voiceData,
+                };
+            })
+            .catch((err) => {
+                if (stale || !controller) return;
+                controller.state.error = `Could not load data for "${entry.code}". ${err.message}`;
+                controller.state.loading = ModelLoadingState.ERROR;
+            });
+
+        return () => {
+            stale = true;
+        };
+    });
+
+    let modelData = $derived(
+        loadedModelData?.id === $selectedCharacterEntry?.id ? loadedModelData : null,
     );
-    let filteredVoiceData = $derived(
-        $selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id]?.[$selectedVariant] : undefined,
-    );
+
+    let filteredMotionData = $derived(modelData?.motionData?.[$selectedVariant]);
+    let filteredVoiceData = $derived(modelData?.voiceData?.[$selectedVariant]);
     // Fallback source for idle-only damaged variants lacking their own voicelines.
-    let filteredNormalVoiceData = $derived(
-        $selectedCharacterEntry ? voiceData[$selectedCharacterEntry.id]?.['normal'] : undefined,
-    );
+    let filteredNormalVoiceData = $derived(modelData?.voiceData?.['normal']);
 
     // Lifecycle: create controller when canvas is available
     $effect(() => {
@@ -1233,7 +1262,6 @@
 
     /* Stats.js performance monitor position at top center */
     :global(#stats) {
-        display: none;
         position: fixed !important;
         top: 0 !important;
         left: 50% !important;
