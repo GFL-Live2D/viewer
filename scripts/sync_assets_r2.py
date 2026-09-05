@@ -36,6 +36,8 @@ from typing import Dict, List, Tuple, Set
 from dataclasses import dataclass, asdict
 from collections import defaultdict
 
+from dotenv import load_dotenv
+
 from paths import DATA_DIR, GUN_LIVE2D, ROOT, SOUNDS_DIR
 
 try:
@@ -44,21 +46,6 @@ try:
 except ImportError:
     boto3 = None
     ClientError = None
-
-
-def load_env_file(env_path: Path) -> None:
-    """Load environment variables from .env file."""
-    if not env_path.exists():
-        return
-
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            if '=' in line:
-                key, value = line.split('=', 1)
-                os.environ.setdefault(key.strip(), value.strip())
 
 
 @dataclass
@@ -328,6 +315,12 @@ class AssetCollector:
         # Output simple dictionary: { modelId: [variant1, variant2, ...] }
         data = self.build_variants_manifest()
 
+        # An empty scan means the source tree is absent, not that there are no models,
+        # so keep whatever manifest is already committed.
+        if not data:
+            print(f"\nNo variants found on disk, leaving {output_path} untouched")
+            return
+
         if not skip_write:
             with open(output_path, 'w') as f:
                 json.dump(data, f, indent=2, sort_keys=True)
@@ -522,11 +515,138 @@ class R2Config:
             return False
 
 
+MOTION_FIELDS = (
+    'id',
+    'motion_name',
+    'touch_area',
+    'probability',
+    'voice',
+    'delay',
+    'is_hurt',
+)
+
+
+def build_variant_data() -> Dict[str, dict]:
+    """Build one self-contained payload per model directory and variant.
+
+    Keyed by the R2 object key, so a consumer that knows only the asset base URL can
+    load a model without live2d.json or motions.json.
+    """
+    def load(name: str):
+        with open(DATA_DIR / name, encoding='utf-8') as f:
+            return json.load(f)
+
+    live2d = load('live2d.json')
+    motions = load('motions.json')
+    voice_rows = load('voice.json')
+    variants = load('variants.json')
+
+    motion_by_id = {m['id']: m for m in motions}
+    voice_by_id = {
+        v['id']: {
+            'char_code': v.get('char_code', ''),
+            'voice_key': v.get('voice_key', ''),
+            'caption': v.get('caption', ''),
+        }
+        for v in voice_rows
+        if v.get('id')
+    }
+
+    # Skins of one model share a directory and its animation set, so the payload is
+    # keyed by directory rather than by entry id.
+    by_directory = defaultdict(list)
+    for entry in live2d:
+        by_directory[entry['directory']].append(entry)
+
+    payloads = {}
+    for directory, entries in by_directory.items():
+        primary = entries[0]
+        motion_ids = sorted({i for e in entries for i in (e.get('motions') or [])})
+
+        for variant in variants.get(directory, []):
+            motion_data = {}
+            voice_data = {}
+            for motion_id in motion_ids:
+                motion = motion_by_id.get(motion_id)
+                if motion is None:
+                    continue
+                if ('destroy' if motion['is_hurt'] else 'normal') != variant:
+                    continue
+                motion_data[str(motion_id)] = {
+                    k: motion[k] for k in MOTION_FIELDS if k in motion
+                }
+                if motion_id in voice_by_id:
+                    voice_data[str(motion_id)] = voice_by_id[motion_id]
+
+            key = f"models/{directory}/{variant}/{directory}.data.json"
+            payloads[key] = {
+                'entry': {
+                    'id': primary['id'],
+                    'code': primary['code'],
+                    'directory': directory,
+                    'motions': motion_ids,
+                },
+                'variant': variant,
+                'motionData': motion_data,
+                'voiceData': voice_data,
+            }
+
+    return payloads
+
+
+def write_variant_data(dest_root: Path) -> int:
+    """Write the payloads into an asset tree, creating variant directories as needed."""
+    payloads = build_variant_data()
+
+    for key, payload in payloads.items():
+        out = dest_root / key
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+
+    print(f"\nWrote {len(payloads)} data.json files to: {dest_root}")
+    return len(payloads)
+
+
+def upload_variant_data(config: 'R2Config') -> bool:
+    """Upload the payloads straight to R2, without staging them on disk."""
+    if not boto3:
+        print("ERROR: boto3 not installed. Run: uv add boto3")
+        return False
+
+    payloads = build_variant_data()
+
+    client = boto3.client(
+        's3',
+        endpoint_url=config.endpoint_url,
+        aws_access_key_id=config.access_key,
+        aws_secret_access_key=config.secret,
+        region_name='auto',
+    )
+
+    failed = 0
+    for i, (key, payload) in enumerate(payloads.items(), 1):
+        try:
+            client.put_object(
+                Bucket=config.bucket,
+                Key=key,
+                Body=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+                ContentType='application/json',
+            )
+        except Exception as e:
+            print(f"  ERROR uploading {key}: {e}")
+            failed += 1
+        if i % 100 == 0:
+            print(f"  Uploaded {i}/{len(payloads)} data files...")
+
+    print(f"\nData files: {len(payloads) - failed} uploaded, {failed} failed")
+    return failed == 0
+
+
 def main():
     """Main entry point."""
     os.chdir(ROOT)
 
-    load_env_file(ROOT / '.env')
+    load_dotenv(ROOT / '.env')
 
     print("Asset Synchronisation Script for Cloudflare R2")
     print("=" * 80)
@@ -577,6 +697,8 @@ def main():
         manifest_path = DATA_DIR / 'variants.json'
         collector.generate_manifest_json(manifest_path)
 
+        write_variant_data(tmp_root)
+
     elif dry_run:
         print("\n[DRY RUN MODE] No files will be copied or uploaded.")
         print("To copy files to tmp/, run with: --copy")
@@ -590,6 +712,9 @@ def main():
             if success:
                 manifest_path = DATA_DIR / 'variants.json'
                 collector.generate_manifest_json(manifest_path)
+                success = upload_variant_data(config)
+
+            if success:
                 print("\n✓ Upload successful!")
             else:
                 print("\n✗ Upload failed!")

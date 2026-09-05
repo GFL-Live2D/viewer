@@ -22,4 +22,4 @@ export const env = {
 
 // Pinned to a commit so a push to the mirror cannot change a deployed build
 export const PUBLIC_MIRROR_URL =
-    'https://rawcdn.githack.com/GFL-Live2D/dump/e4975ef964681576c87066bdc19e5fcec18938a1';
+    'https://rawcdn.githack.com/GFL-Live2D/dump/0f4144f4bec65c788b5696e35643e4e657d36b0d';

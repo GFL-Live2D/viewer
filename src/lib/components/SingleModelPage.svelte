@@ -1,8 +1,44 @@
 <script lang="ts">
     import GunViewer from '$lib/components/GunViewer.svelte';
     import DataError from '$lib/components/DataError.svelte';
+    import { loadSingleModelData } from '$lib/model-data/gun';
 
     let { data } = $props();
+
+    let loaded = $state<{ id: string; motionData: any; voiceData: any; assetBaseUrl: string } | null>(
+        null,
+    );
+    let loadFailed = $state(false);
+
+    $effect(() => {
+        const model = data.model;
+        if (!model) return;
+
+        let stale = false;
+        loadSingleModelData(model)
+            .then((result) => {
+                if (stale) return;
+                if (result.assetsMissing) {
+                    loadFailed = true;
+                    return;
+                }
+                loaded = {
+                    id: model.id,
+                    motionData: result.motionData,
+                    voiceData: result.voiceData,
+                    assetBaseUrl: result.assetBaseUrl,
+                };
+            })
+            .catch(() => {
+                if (!stale) loadFailed = true;
+            });
+
+        return () => {
+            stale = true;
+        };
+    });
+
+    const ready = $derived(loaded?.id === data.model?.id ? loaded : null);
 
     const name = $derived(data.model?.gunName || data.model?.code || '');
     const costume = $derived(data.model?.costumeName);
@@ -17,7 +53,7 @@
 </script>
 
 <svelte:head>
-    {#if !data.assetsMissing}
+    {#if !loadFailed}
         <title>{title}</title>
         <meta name="description" content={description} />
         <meta name="robots" content="noindex, follow" />
@@ -30,15 +66,15 @@
     {/if}
 </svelte:head>
 
-{#if data.assetsMissing}
+{#if loadFailed}
     <DataError />
-{:else}
+{:else if ready}
     <GunViewer
         model={data.model}
         variant={data.variant}
-        motionData={data.motionData}
-        voiceData={data.voiceData}
-        assetBaseUrl={data.assetBaseUrl}
+        motionData={ready.motionData}
+        voiceData={ready.voiceData}
+        assetBaseUrl={ready.assetBaseUrl}
         transparent
     />
 {/if}

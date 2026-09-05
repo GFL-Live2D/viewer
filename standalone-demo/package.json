@@ -1,0 +1,9 @@
+{
+    "name": "gfl-live2d-standalone-demo",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "cd .. && bun run build:lib && rm -rf standalone-demo/dist && cp -R dist standalone-demo/dist",
+        "dev": "bun run build && bunx --bun serve ."
+    }
+}

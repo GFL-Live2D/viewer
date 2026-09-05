@@ -5,6 +5,8 @@
     import { Input } from '$lib/components/ui/input';
     import { toggleVariants } from '$lib/components/ui/toggle/index.js';
     import { cn } from '$lib/utils.js';
+    import { onDestroy } from 'svelte';
+    import type Stats from 'stats.js';
     import { buildWikiLink } from '$lib/shareLinks';
     import {
         searchQuery,
@@ -25,14 +27,40 @@
     }>();
 
     const filterButtonClass =
-        'border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground flex-grow basis-0 rounded-lg border px-3 py-2 text-xs font-medium transition';
+        'border-border bg-background-tertiary text-foreground-secondary hover:border-accent hover:bg-background-secondary hover:text-foreground grow basis-auto rounded-lg border px-3 py-2 text-xs font-medium whitespace-normal transition';
 
     let showPerfMonitor = $state(false);
+    let stats: Stats | null = null;
+    let statsTick: (() => void) | null = null;
 
-    function togglePerfMonitor() {
-        showPerfMonitor = !showPerfMonitor;
-        $controller?.setPerfMonitor(showPerfMonitor);
+    function removePerfMonitor() {
+        if (statsTick) $controller?.app.ticker.remove(statsTick);
+        stats?.dom.remove();
+        stats = null;
+        statsTick = null;
     }
+
+    // Loaded on first enable so the library stays out of every bundle that never toggles it
+    async function togglePerfMonitor() {
+        showPerfMonitor = !showPerfMonitor;
+
+        if (!showPerfMonitor) {
+            removePerfMonitor();
+            return;
+        }
+
+        const { default: Stats } = await import('stats.js');
+        if (!showPerfMonitor || stats) return;
+
+        stats = new Stats();
+        stats.showPanel(0);
+        stats.dom.id = 'stats';
+        document.body.appendChild(stats.dom);
+        statsTick = () => stats?.update();
+        $controller?.app.ticker.add(statsTick);
+    }
+
+    onDestroy(removePerfMonitor);
 
     function pickRandom() {
         const pool = $filteredModels.filter((m) => m.id !== $selectedModel);
@@ -103,9 +131,9 @@
                     type="button"
                     onclick={() => filterDuplicates.set(!$filterDuplicates)}
                     aria-pressed={$filterDuplicates}
-                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[150px]')}
+                    class={cn(toggleVariants(), filterButtonClass)}
                 >
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         {#if $filterDuplicates}
                             <Funnel class="text-accent shrink-0" />
                         {:else}
@@ -118,9 +146,9 @@
                     type="button"
                     onclick={() => decensor.set(!$decensor)}
                     aria-pressed={$decensor}
-                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[150px]')}
+                    class={cn(toggleVariants(), filterButtonClass)}
                 >
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         {#if $decensor}
                             <HeartHandshake class="text-foreground shrink-0" />
                         {:else}
@@ -133,9 +161,9 @@
                     type="button"
                     onclick={togglePerfMonitor}
                     aria-pressed={showPerfMonitor}
-                    class={cn(toggleVariants(), filterButtonClass, 'min-w-[80px]')}
+                    class={cn(toggleVariants(), filterButtonClass)}
                 >
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         <Activity class="shrink-0 {showPerfMonitor ? 'stroke-yellow-500' : ''}" />
                         <span>Performance monitor</span>
                     </div>
@@ -153,7 +181,7 @@
                         'min-w-[110px]',
                     )}
                 >
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         <span class="density-label-table flex items-center gap-2">
                             <Table class="shrink-0" />
                             <span>Table view</span>
@@ -169,7 +197,7 @@
                         filterButtonClass,
                         'min-w-[110px]',
                     )}>
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         <Dices class="shrink-0" strokeWidth={1.75} />
                         <span>Random</span>
                     </div>
@@ -187,7 +215,7 @@
                     class:pointer-events-none={!wikiUrl}
                     class:opacity-50={!wikiUrl}
                 >
-                    <div class="flex items-center justify-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                         <ExternalLink class="shrink-0 text-yellow-500" />
                         <span>Open in Wiki</span>
                     </div>

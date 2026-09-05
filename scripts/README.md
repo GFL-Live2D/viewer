@@ -84,13 +84,13 @@ uv run scripts/sync_assets_r2.py --upload  # upload to the R2 bucket
 
 `--upload` skips files already present in the bucket, so re-runs only send what changed.
 
+Both modes also emit `models/<directory>/<variant>/<directory>.data.json`, holding the entry stub
+plus that variant's motion and voice rows. The viewer fetches these at runtime, so this step is
+required before the site can load a model, whichever mode you use.
+
 Configuration comes from `.env` at project root: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY`, `R2_SECRET`,
 `R2_BUCKET`, `ASSETS_CDN_URL`. `R2_ENDPOINT` is optional and defaults to the account's
 `r2.cloudflarestorage.com` URL.
-
-### `split-model-data.ts`
-
-Emits one motion/voice file per model so a single-model page fetches only its own data. It is automatically ran before `static:build`; output is gitignored.
 
 ## Conversion and validation
 

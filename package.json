@@ -1,16 +1,15 @@
 {
     "name": "live2d-viewer",
     "private": false,
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Standalone Live2D model viewer with motion, audio, parameter, and part controls. Powered by PixiJS and untitled-pixi-live2d-engine.",
     "type": "module",
     "license": "MIT",
     "scripts": {
         "dev": "bunx --bun vite dev",
-        "predev": "bun run scripts/split-model-data.ts",
-        "prebuild": "bun run scripts/split-model-data.ts",
         "build": "bunx --bun vite build",
-        "build:static": "bun run scripts/split-model-data.ts && BUILD_TARGET=static bunx --bun vite build",
+        "build:static": "BUILD_TARGET=static bunx --bun vite build",
+        "build:lib": "bunx --bun vite build --config vite.config.lib.ts",
         "preview": "bunx --bun vite preview",
         "prepare": "svelte-kit sync || echo ''",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"

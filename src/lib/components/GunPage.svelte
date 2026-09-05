@@ -129,8 +129,13 @@
     });
 
     // Set outside an effect so the prerendered HTML carries the list instead of hydrating into it
-    modelNames.set(buildModelNames(models));
-    variantsByModel.set(variantsByModelProp);
+    modelNames.set(buildModelNames(untrack(() => models)));
+    variantsByModel.set(untrack(() => variantsByModelProp));
+
+    $effect(() => {
+        modelNames.set(buildModelNames(models));
+        variantsByModel.set(variantsByModelProp);
+    });
 
     let isBgMoveMode = $state(false); // Managed by BackgroundManager
 
@@ -281,7 +286,7 @@
     });
 
     // Initial set runs during SSR, where effects do not, so the prerendered list is not empty
-    storeFilteredModels.set(filteredModels);
+    storeFilteredModels.set(untrack(() => filteredModels));
     $effect(() => {
         storeFilteredModels.set(filteredModels);
     });
