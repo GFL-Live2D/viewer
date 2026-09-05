@@ -171,12 +171,22 @@ To regenerate any of these from game files, see [`scripts/README.md`](scripts/RE
 
 ## Using the Controller Standalone
 
-`src/lib/live2d/Live2DController.svelte.ts` is a self-contained class that manages a PixiJS application and an
-`untitled-pixi-live2d-engine` model. It has no dependency on SvelteKit or the viewer UI.
-To use it elsewhere: create a `<canvas>`, instantiate `Live2DController`, call `loadCharacter(entry, variant, motionData, voiceData, true, assetBaseUrl)`, then drive it through its public methods (`playMotion`, `setZoom`, `setFocusPoint`, etc.).
-Per-model render tweaks are read from `src/lib/data/live2d-overrides.json`, inline that data or pass your own.
-The only runtime dependency besides PixiJS and `untitled-pixi-live2d-engine` is the zoom spring;
-replace it with any interpolation if you are outside this project.
+The main use is the app above: host the whole viewer with its UI. The other is to drop the model
+renderer into your own page and skip the UI entirely.
+
+`Live2DController` manages a PixiJS application and an `untitled-pixi-live2d-engine` model, with no
+dependency on SvelteKit or the viewer UI. It renders and exposes motions, zoom, focus and part
+control; input bindings and any UI are yours to build.
+
+Two builds ship per release:
+
+- [module-example.html](https://gfl-live2d.github.io/demo/module-example.html) imports `viewer.js`,
+  an ES module bundling PixiJS and the engine.
+- [global-example.html](https://gfl-live2d.github.io/demo/global-example.html) loads
+  `viewer.external.js` with plain script tags, reading PixiJS and the engine off the `PIXI` global
+  the way the Cubism SDK does.
+
+Both need Cubism Core on the page first.
 
 ## Licence
 
