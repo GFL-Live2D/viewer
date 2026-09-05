@@ -60,5 +60,8 @@
     },
     "ZB26_7101": {
         "normal": ["HX"]
+    },
+    "88type_5308": {
+        "destroy": ["PartHexie"]
     }
 }
