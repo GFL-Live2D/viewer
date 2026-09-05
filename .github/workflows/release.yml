@@ -1,0 +1,66 @@
+name: Release library
+
+on:
+  push:
+    branches: [main]
+    paths: ['package.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read the version
+        id: version
+        run: echo "value=v$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Stop if the tag already exists
+        id: check
+        run: |
+          if git rev-parse "${{ steps.version.outputs.value }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.check.outputs.exists == 'false'
+        with:
+          bun-version: latest
+
+      - run: bun ci
+        if: steps.check.outputs.exists == 'false'
+
+      - run: bun run build:lib
+        if: steps.check.outputs.exists == 'false'
+
+      - name: Tag the build
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist
+          git commit -m "Build ${{ steps.version.outputs.value }}"
+          git tag "${{ steps.version.outputs.value }}"
+          git push origin "${{ steps.version.outputs.value }}"
+
+      - name: Create the release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.value }}" \
+            --title "${{ steps.version.outputs.value }}" \
+            --generate-notes \
+            dist/viewer.js

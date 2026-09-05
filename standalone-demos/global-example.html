@@ -3,10 +3,12 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Live2DController standalone demo</title>
+        <title>Live2DController script tag demo</title>
 
-        <!-- GFL Live2d Viewer needs Cubism Core -->
         <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/untitled-pixi-live2d-engine@1.3.5/dist/cubism.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/GFL-Live2D/viewer@v0.3.0/dist/viewer.external.js"></script>
 
         <style>
             body {
@@ -59,8 +61,8 @@
         <div id="panel"></div>
         <div id="status">loading...</div>
 
-        <script type="module">
-            import { Live2DController } from './dist/viewer.js';
+        <script>
+            const { Live2DController } = GflLive2D;
 
             const CDN = 'https://rawcdn.githack.com/GFL-Live2D/dump/0f4144f4bec65c788b5696e35643e4e657d36b0d';
             const DIRECTORY = 'm4a1mod';
@@ -70,15 +72,18 @@
             const panel = document.getElementById('panel');
             const controller = new Live2DController(document.getElementById('stage'));
 
-            const url = `${CDN}/models/${DIRECTORY}/${VARIANT}/${DIRECTORY}.data.json`;
-            const { entry, motionData, voiceData } = await (await fetch(url)).json();
+            (async () => {
+                const url = `${CDN}/models/${DIRECTORY}/${VARIANT}/${DIRECTORY}.data.json`;
+                const { entry, motionData, voiceData } = await (await fetch(url)).json();
 
-            // Renderer init is awaited internally
-            const ok = await controller.loadCharacter(entry, VARIANT, motionData, voiceData, true, CDN);
+                // Renderer init is awaited internally
+                const ok = await controller.loadCharacter(entry, VARIANT, motionData, voiceData, true, CDN);
 
-            if (!ok) {
-                status.textContent = controller.state.error ?? 'failed to load';
-            } else {
+                if (!ok) {
+                    status.textContent = controller.state.error ?? 'failed to load';
+                    return;
+                }
+
                 status.textContent = `${entry.code} loaded. Click a motion to play it.`;
 
                 for (const group of controller.state.motionGroups) {
@@ -87,7 +92,7 @@
                     button.onclick = () => controller.playMotionGroup(group);
                     panel.append(button);
                 }
-            }
+            })();
 
             window.addEventListener('beforeunload', () => controller.cleanup());
         </script>

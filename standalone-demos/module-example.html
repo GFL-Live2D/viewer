@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Live2DController standalone demo</title>
+
+        <!-- GFL Live2d Viewer needs Cubism Core -->
+        <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+
+        <style>
+            body {
+                margin: 0;
+                background: #14141a;
+                color: #e6e6ea;
+                font: 14px system-ui, sans-serif;
+            }
+
+            canvas {
+                display: block;
+                width: 100vw;
+                height: 100vh;
+            }
+
+            #panel {
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                max-width: calc(100vw - 2rem);
+            }
+
+            button {
+                background: #24242e;
+                color: inherit;
+                border: 1px solid #3a3a48;
+                border-radius: 4px;
+                padding: 0.4rem 0.7rem;
+                font: inherit;
+                cursor: pointer;
+            }
+
+            button:hover {
+                border-color: #ff2e63;
+            }
+
+            #status {
+                position: fixed;
+                bottom: 1rem;
+                left: 1rem;
+                opacity: 0.7;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="stage"></canvas>
+        <div id="panel"></div>
+        <div id="status">loading...</div>
+
+        <script type="module">
+            import { Live2DController } from 'https://cdn.jsdelivr.net/gh/GFL-Live2D/viewer@v0.3.0/dist/viewer.js';
+
+            const CDN = 'https://rawcdn.githack.com/GFL-Live2D/dump/0f4144f4bec65c788b5696e35643e4e657d36b0d';
+            const DIRECTORY = 'm4a1mod';
+            const VARIANT = 'normal';
+
+            const status = document.getElementById('status');
+            const panel = document.getElementById('panel');
+            const controller = new Live2DController(document.getElementById('stage'));
+
+            const url = `${CDN}/models/${DIRECTORY}/${VARIANT}/${DIRECTORY}.data.json`;
+            const { entry, motionData, voiceData } = await (await fetch(url)).json();
+
+            // Renderer init is awaited internally
+            const ok = await controller.loadCharacter(entry, VARIANT, motionData, voiceData, true, CDN);
+
+            if (!ok) {
+                status.textContent = controller.state.error ?? 'failed to load';
+            } else {
+                status.textContent = `${entry.code} loaded. Click a motion to play it.`;
+
+                for (const group of controller.state.motionGroups) {
+                    const button = document.createElement('button');
+                    button.textContent = group;
+                    button.onclick = () => controller.playMotionGroup(group);
+                    panel.append(button);
+                }
+            }
+
+            window.addEventListener('beforeunload', () => controller.cleanup());
+        </script>
+    </body>
+</html>

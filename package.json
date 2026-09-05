@@ -9,7 +9,7 @@
         "dev": "bunx --bun vite dev",
         "build": "bunx --bun vite build",
         "build:static": "BUILD_TARGET=static bunx --bun vite build",
-        "build:lib": "bunx --bun vite build --config vite.config.lib.ts",
+        "build:lib": "bunx --bun vite build --config vite.config.lib.ts && bunx --bun vite build --config vite.config.global.ts",
         "preview": "bunx --bun vite preview",
         "prepare": "svelte-kit sync || echo ''",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
