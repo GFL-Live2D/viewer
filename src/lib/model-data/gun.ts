@@ -3,6 +3,7 @@
 import { getGunModelIndex, getAliases, getGunModelVariants } from '$lib/model-data/live2d';
 import type { Live2DModelIndex, MotionData, VoiceData } from '$lib/model-data/live2d';
 import { env, PUBLIC_MIRROR_URL } from '$lib/publicEnv';
+import { building } from '$app/environment';
 
 // A static build has no server to serve static/assets, so it falls back to the mirror
 const STATIC_BUILD = import.meta.env.VITE_BUILD_TARGET === 'static';
@@ -13,7 +14,10 @@ function assetBaseUrl(): string {
     return STATIC_BUILD ? PUBLIC_MIRROR_URL : '/assets';
 }
 
+// A node deploy reads PUBLIC_CDN_URL from its own process.env, which the build cannot see,
+// so prerendering defers the verdict to the server or the client
 function assetsConfigured(): boolean {
+    if (building && !STATIC_BUILD) return true;
     return Boolean(env.PUBLIC_CDN_URL) || STATIC_BUILD || SELF_HOSTED_ASSETS;
 }
 
