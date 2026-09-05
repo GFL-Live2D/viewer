@@ -1,7 +1,7 @@
 {
     "name": "live2d-viewer",
     "private": false,
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Standalone Live2D model viewer with motion, audio, parameter, and part controls. Powered by PixiJS and untitled-pixi-live2d-engine.",
     "type": "module",
     "license": "MIT",

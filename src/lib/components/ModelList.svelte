@@ -29,7 +29,6 @@
     import { onMount, onDestroy } from 'svelte';
 
     let containerRefs = $state<Record<string, HTMLElement | undefined>>({});
-    // Store references to the list item elements directly
     let listItemRefs = $state<Record<string, HTMLElement | undefined>>({});
     let scrollingContainers = $state<Record<string, boolean>>({});
     let hoveredModel = $state<string | null>(null);
@@ -43,8 +42,6 @@
     // the list does not mean stepping through every row.
     let focusRow = $state(0);
     let focusCol = $state(0);
-
-    let isTable = $derived($listDensity === 'table');
 
     // Column 0 is the name button, the rest are that row's variant cells
     function rowLength(index: number): number {
@@ -121,13 +118,10 @@
         const containerRect = scrollContainer.getBoundingClientRect();
         const elRect = el.getBoundingClientRect();
 
-        // Calculate the current visual offset of the element from the top of the container
         const relativeOffset = elRect.top - containerRect.top;
 
-        // Current scroll position
         const currentScroll = scrollContainer.scrollTop;
 
-        // Target: We want the element's relative offset to be (containerHeight/2 - elHeight/2)
         const targetRelativeOffset = (scrollContainer.clientHeight / 2) - (el.offsetHeight / 2);
         const scrollDelta = relativeOffset - targetRelativeOffset;
 
@@ -146,7 +140,6 @@
 
         const el = listItemRefs[$selectedModel];
         if (!el) {
-            // Element likely filtered out
             showTopIndicator = false;
             showBottomIndicator = false;
             return;
@@ -155,14 +148,11 @@
         const containerRect = scrollContainer.getBoundingClientRect();
         const elRect = el.getBoundingClientRect();
 
-        // Check Top: Element is strictly above the container's visual top edge
         showTopIndicator = elRect.bottom < containerRect.top + 5;
 
-        // Check Bottom: Element is strictly below the container's visual bottom edge
         showBottomIndicator = elRect.top > containerRect.bottom - 5;
     }
 
-    // Check on scroll
     function onScroll() {
         checkScrollPosition();
     }
@@ -173,10 +163,8 @@
         scrollContainer?.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    // Auto-scroll when selection changes
     $effect(() => {
         if ($selectedModel) {
-            // Small delay to ensure render
             setTimeout(() => {
                 scrollToSelected();
                 checkScrollPosition();
@@ -184,7 +172,6 @@
         }
     });
 
-    // Check updates for models list or re-checks
     $effect(() => {
         $filteredModels;
         setTimeout(checkScrollPosition, 100);
@@ -197,7 +184,6 @@
             });
             resizeObserver.observe(scrollContainer);
         }
-        // Also listen to window resize as backup
         window.addEventListener('resize', checkScrollPosition);
     });
 
@@ -208,14 +194,12 @@
         }
     });
 
-    // Check for overflow when container refs update and set CSS variable for animation distance
     $effect(() => {
         for (const [modelId, el] of Object.entries(containerRefs)) {
             if (el) {
                 const hasOverflow = el.scrollWidth > el.clientWidth;
                 scrollingContainers[modelId] = hasOverflow;
 
-                // Set CSS variable for the actual overflow distance plus padding buffer
                 if (hasOverflow) {
                     const overflowDistance = el.scrollWidth - el.clientWidth;
                     const firstChild = el.children[0] as HTMLElement;
@@ -248,32 +232,19 @@
     <div
         bind:this={scrollContainer}
         onscroll={onScroll}
-        class="custom-scrollbar border-border flex-1 overflow-y-scroll border-t {isTable ? '' : 'p-4'}"
+        data-density={$listDensity ?? 'auto'}
+        class="model-list custom-scrollbar border-border flex-1 overflow-y-scroll border-t"
     >
-        <div class={isTable ? '' : 'space-y-3'}>
+        <div class="model-list-rows">
             {#each $filteredModels as model, rowIndex (model.id)}
                 <div
                     bind:this={listItemRefs[model.id]}
                     id={`model-list-item-${model.id}`}
-                    class="flex transition-colors duration-200 {isTable
-                        ? 'border-border border-r border-b'
-                        : 'overflow-hidden rounded border'} {$selectedModel === model.id
-                        ? isTable
-                            ? 'bg-accent/10'
-                            : 'border-accent bg-accent/10'
-                        : isTable
-                          ? 'hover:bg-accent/20'
-                          : 'border-border bg-background-secondary/50 hover:border-accent hover:bg-accent/20'}"
+                    class="model-row flex transition-colors duration-200"
+                    class:is-selected={$selectedModel === model.id}
                 >
-                    <div
-                        class="border-border bg-background-tertiary/50 flex shrink-0 items-center border-r px-2 {isTable
-                            ? 'py-1'
-                            : 'py-3'}"
-                    >
-                        <span
-                            class="margin-auto text-foreground-tertiary font-mono text-xs {isTable
-                                ? 'w-5 text-right'
-                                : 'w-8 text-center'}"
+                    <div class="model-row-id border-border bg-background-tertiary/50 flex shrink-0 items-center border-r px-2">
+                        <span class="model-row-id-text margin-auto text-foreground-tertiary font-mono text-xs"
                             >{model.id.match(/\d+$/)}</span
                         >
                     </div>
@@ -297,25 +268,25 @@
                             style="display: flex; align-items: center; will-change: transform; white-space: nowrap; transition: transform 0.3s ease-in-out;"
                         >
                             {#if $sortBy === 'name'}
-                                <div class="flex shrink-0 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
+                                <div class="model-cell flex shrink-0 items-center px-3">
                                     <div class="text-foreground-secondary text-xs font-semibold">
                                         <TextScroller text={model.costumeName} />
                                     </div>
                                 </div>
                                 <div class="bg-border h-4 w-px"></div>
-                                <div class="flex min-w-0 flex-1 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
+                                <div class="model-cell flex min-w-0 flex-1 items-center px-3">
                                     <span class="text-foreground-secondary text-xs font-semibold"
                                         ><GunNameDisplay name={$modelNames[model.id]} /></span
                                     >
                                 </div>
                             {:else}
-                                <div class="flex shrink-0 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
+                                <div class="model-cell flex shrink-0 items-center px-3">
                                     <span class="text-foreground-secondary text-xs font-semibold"
                                         ><GunNameDisplay name={$modelNames[model.id]} /></span
                                     >
                                 </div>
                                 <div class="bg-border h-4 w-px"></div>
-                                <div class="flex min-w-0 flex-1 items-center px-3 {isTable ? 'py-1' : 'py-3'}">
+                                <div class="model-cell flex min-w-0 flex-1 items-center px-3">
                                     <div class="text-foreground-secondary text-xs font-semibold">
                                         <TextScroller text={model.costumeName} />
                                     </div>
@@ -335,9 +306,7 @@
                                     onkeydown={(e) => handleGridKeydown(e, rowIndex, variantIndex + 1)}
                                     onfocus={() => ((focusRow = rowIndex), (focusCol = variantIndex + 1))}
                                     tabindex={isTabStop(rowIndex, variantIndex + 1) ? 0 : -1}
-                                    class="variant-cell border-border flex items-center justify-center px-2 not-first:border-l {isTable
-                                        ? 'py-1'
-                                        : 'py-2'} transition-all duration-300 {$selectedModel ===
+                                    class="variant-cell border-border flex items-center justify-center px-2 not-first:border-l transition-all duration-300 {$selectedModel ===
                                         model.id && $selectedVariant === variant
                                         ? 'bg-accent text-foreground font-bold shadow-inner'
                                         : 'bg-background-secondary/30 text-foreground-tertiary hover:bg-accent/40 hover:text-foreground'}"

@@ -32,5 +32,8 @@
     "UMP45Mod_584": {
         "normal": { "origin": false },
         "destroy": { "origin": false }
+    },
+    "G41_7406": {
+        "destroy": { "scale": 1.6 }
     }
 }

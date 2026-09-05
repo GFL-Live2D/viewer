@@ -128,13 +128,11 @@ export function getAvailableHitAreas(model: any): string[] {
 export function logHitboxDiagnostics(model: any, modelJson: any, verbose = false): void {
     console.group('[Hitbox Diagnostics]');
 
-    // From model3.json
     console.group('model3.json HitAreas');
     const definedHitAreas = extractHitAreas(modelJson);
     console.table(definedHitAreas);
     console.groupEnd();
 
-    // Loaded in model
     console.group('Loaded Hit Areas (internal)');
     const debugInfo = getHitAreaDebugInfo(model);
     if (debugInfo.length > 0) {
@@ -145,12 +143,10 @@ export function logHitboxDiagnostics(model: any, modelJson: any, verbose = false
     console.groupEnd();
 
     if (verbose) {
-        // Raw internal model data
         console.group('Raw internalModel.hitAreas');
         console.log(model.internalModel.hitAreas);
         console.groupEnd();
 
-        // Test all hit areas
         console.group('Hit Area Test (center of model)');
         const width = model.width || 1000;
         const height = model.height || 1000;

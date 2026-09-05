@@ -1,4 +1,5 @@
 <script lang="ts">
+    import EllipsisVertical from '@lucide/svelte/icons/ellipsis-vertical';
     let { onDragStart, onDrag, onDragEnd, onDoubleClick } = $props<{
         onDragStart?: (e: PointerEvent) => void;
         onDrag?: (e: PointerEvent) => void;
@@ -37,8 +38,8 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
-    class="bg-background-secondary/95 hover:bg-background-secondary flex h-3 cursor-ns-resize items-center justify-center transition-colors select-none"
-    class:bg-accent={isDragging}
+    class="before:bg-background-secondary/95 hover:before:bg-background-secondary relative flex h-6 cursor-ns-resize items-center justify-center select-none before:absolute before:inset-x-0 before:bottom-0 before:h-1/2 before:transition-colors"
+    class:before:bg-accent={isDragging}
     onpointerdown={handlePointerDown}
     ondblclick={handleDoubleClick}
     role="separator"
@@ -48,8 +49,9 @@
     aria-label="Resize panel"
     tabindex="0"
 >
-    <!-- Visual grip indicator -->
-    <div class="bg-accent h-1 w-12 rounded-full"></div>
+    <div class="border-accent bg-background-secondary relative z-10 flex h-5 w-12 items-center justify-center rounded-full border">
+        <EllipsisVertical class="text-accent size-5 rotate-90" />
+    </div>
 </div>
 
 <style>

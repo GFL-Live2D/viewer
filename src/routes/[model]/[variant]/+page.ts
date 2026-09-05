@@ -36,6 +36,5 @@ export const load: PageLoad = async ({ params, fetch }) => {
         ...data,
         only: true,
         variant: resolveVariant(data.variants, requested),
-        transparent: false,
     };
 };

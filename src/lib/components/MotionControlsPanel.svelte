@@ -1,11 +1,18 @@
 <script lang="ts">
-    import { controller, isCaptionDetached, uiState } from '$lib/stores/gun-page';
+    import {
+        controller,
+        isCaptionDetached,
+        modelNames,
+        selectedCharacterEntry,
+        uiState,
+    } from '$lib/stores/gun-page';
+    import { buildWikiLink } from '$lib/shareLinks';
     import MotionGrid from '$lib/components/MotionGrid.svelte';
     import DetachableCaption from '$lib/components/DetachableCaption.svelte';
     import Separator from '$lib/components/ui/separator/separator.svelte';
     import { Checkbox } from '$lib/components/ui/checkbox';
     import { Label } from '$lib/components/ui/label';
-    import { SlidersHorizontal } from '@lucide/svelte';
+    import { ExternalLink, SlidersHorizontal } from '@lucide/svelte';
 
     let {
         onPlayMotion,
@@ -14,6 +21,13 @@
         onPlayMotion: (groupName: string, variantIndex: number) => void;
         onReset: () => void;
     } = $props();
+
+    let quotesUrl = $derived.by(() => {
+        const entry = $selectedCharacterEntry;
+        if (!entry) return null;
+
+        return buildWikiLink($modelNames[entry.id] || entry.gunName, 'Quotes');
+    });
 
     function toggleParametersPanel() {
         uiState.update((s) => ({ ...s, isParametersPanelOpen: !s.isParametersPanelOpen }));
@@ -43,7 +57,21 @@
         <MotionGrid controller={$controller} {onPlayMotion} />
 
         <div class="mt-6">
-            <h3 class="subtitle text-foreground-secondary mb-3 text-lg font-semibold tracking-wide">Voice</h3>
+            <div class="mb-3 flex items-center gap-2">
+                <h3 class="subtitle text-foreground-secondary text-lg font-semibold tracking-wide">Voice</h3>
+                {#if quotesUrl}
+                    <a
+                        href={quotesUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-foreground-tertiary hover:text-foreground transition-colors"
+                        title="Open quotes in Wiki"
+                        aria-label="Open quotes in Wiki"
+                    >
+                        <ExternalLink class="h-4 w-4 shrink-0" />
+                    </a>
+                {/if}
+            </div>
             <div class="flex flex-col space-y-2">
                 <div class="flex items-center space-x-2">
                     <Checkbox

@@ -39,6 +39,6 @@
         motionData={data.motionData}
         voiceData={data.voiceData}
         assetBaseUrl={data.assetBaseUrl}
-        transparent={data.transparent}
+        transparent
     />
 {/if}

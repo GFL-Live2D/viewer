@@ -55,9 +55,11 @@ export type ListDensity = 'list' | 'table';
 
 const LIST_DENSITY_STORAGE_KEY = 'gfl:list-density';
 
+// Null means no explicit choice, which leaves the density to the CSS width rules
 function createListDensityStore() {
     const stored = browser ? localStorage.getItem(LIST_DENSITY_STORAGE_KEY) : null;
-    const { subscribe, set } = writable<ListDensity>(stored === 'table' ? 'table' : 'list');
+    const initial = stored === 'table' || stored === 'list' ? stored : null;
+    const { subscribe, set } = writable<ListDensity | null>(initial);
 
     return {
         subscribe,

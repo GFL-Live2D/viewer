@@ -5,6 +5,7 @@
     import { Input } from '$lib/components/ui/input';
     import { toggleVariants } from '$lib/components/ui/toggle/index.js';
     import { cn } from '$lib/utils.js';
+    import { buildWikiLink } from '$lib/shareLinks';
     import {
         searchQuery,
         sortBy,
@@ -45,24 +46,18 @@
         onSelectModel(model.id, variant);
     }
 
-    // Wiki titles match the mapped display name with underscores for spaces
     let wikiUrl = $derived.by(() => {
         const entry = $selectedCharacterEntry;
         if (!entry) return null;
 
-        const name = $modelNames[entry.id] || entry.gunName;
-        if (!name) return null;
-
-        // MOD3 units share the base gun page, and the wiki drops the Gr prefix
-        const title = name
-            .trim()
-            .replace(/[ _]MOD3$/i, '')
-            .replace(/^Gr[ _]/i, '')
-            .replace(/ /g, '_');
-        if (!title) return null;
-
-        return `https://iopwiki.com/wiki/${encodeURIComponent(title)}`;
+        return buildWikiLink($modelNames[entry.id] || entry.gunName);
     });
+
+    // An unset density is resolved by CSS, which publishes the result as --density
+    function toggleDensity(e: MouseEvent) {
+        const current = getComputedStyle(e.currentTarget as HTMLElement).getPropertyValue('--density');
+        listDensity.set(current.trim() === 'table' ? 'list' : 'table');
+    }
 </script>
 
 <Accordion.Root type="single" class="border-border w-full border-t">
@@ -149,23 +144,24 @@
             <div class="mt-2 flex w-full flex-wrap gap-2">
                 <button
                     type="button"
-                    onclick={() => listDensity.set($listDensity === 'table' ? 'list' : 'table')}
-                    title="Switch to {$listDensity === 'table' ? 'list' : 'table'} view"
-                    aria-label="Switch to {$listDensity === 'table' ? 'list' : 'table'} view"
+                    onclick={toggleDensity}
+                    data-density={$listDensity ?? 'auto'}
                     class={cn(
                         toggleVariants(),
                         filterButtonClass,
+                        'density-toggle',
                         'min-w-[110px]',
                     )}
                 >
                     <div class="flex items-center justify-center gap-2">
-                        {#if $listDensity === 'table'}
+                        <span class="density-label-table flex items-center gap-2">
                             <Table class="shrink-0" />
                             <span>Table view</span>
-                        {:else}
+                        </span>
+                        <span class="density-label-list flex items-center gap-2">
                             <Rows3 class="shrink-0" />
                             <span>List view</span>
-                        {/if}
+                        </span>
                     </div>
                 </button>
                 <button type="button" onclick={pickRandom} class={cn(

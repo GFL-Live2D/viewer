@@ -2,12 +2,15 @@ import * as PIXI from 'pixi.js';
 import { Graphics } from 'pixi.js';
 // Dynamic import used for Live2DModel to avoid SSR crashes regarding 'document'
 import type { Live2DModel } from 'untitled-pixi-live2d-engine';
-import { Spring } from 'svelte/motion';
-import live2dOverrides from '$lib/data/live2d-overrides.json';
+import { Spring } from './spring';
+import live2dOverrides from '../data/live2d-overrides.json';
 import Stats from 'stats.js';
 
 export const ZOOM_MIN = -20;
 export const ZOOM_MAX = 20;
+
+// Zoom values are logarithmic
+const ZOOM_BASE = 1.1;
 
 export enum ModelLoadingState {
     IDLE = 'idle',
@@ -16,7 +19,6 @@ export enum ModelLoadingState {
     ERROR = 'error',
 }
 
-// Types for our data sources
 interface MotionData {
     id: number;
     motion_name: string;
@@ -40,7 +42,6 @@ interface CharacterEntry {
     motions: number[]; // List of motion IDs
 }
 
-// --- Extended Types for Library Internals ---
 // Internal structure types for untitled-pixi-live2d-engine
 // We need these to access internal properties that are not exposed in the public type definitions
 // or to fix type mismatches where the library uses 'any' or incorrect types.
@@ -94,11 +95,10 @@ interface ExtendedInternalModel {
 }
 
 export class Live2DController {
-    // Pixi Internals
     app: PIXI.Application;
-    model: Live2DModel | undefined; // Live2DModel
-    private canvas: HTMLCanvasElement; // Store canvas reference
-    private bgSprite: PIXI.Sprite | null = null; // Background sprite
+    model: Live2DModel | undefined;
+    private canvas: HTMLCanvasElement;
+    private bgSprite: PIXI.Sprite | null = null;
     private bgUrl: string | null = null; // URL passed to Assets.load for the current bgSprite's texture
     private modelUrl: string | null = null; // model3.json URL of the currently loaded model
     private highlightedPartId: string | null = null;
@@ -106,14 +106,12 @@ export class Live2DController {
     private applyOverrides?: () => void;
     private frozenEffects?: { breath: unknown; physics: unknown; pose: unknown; eyeBlink: unknown };
     private GifSource: any; // Set once pixi.js/gif is imported in initPixi
-    private captionText: PIXI.Text | null = null; // Caption text overlay
+    private captionText: PIXI.Text | null = null;
     private captionInsets = { left: 0, right: 0, bottom: 0 };
     private stats: Stats | null = null;
     private statsTick: (() => void) | null = null;
     private isCanvasCaptionSuppressed = false;
 
-    // State (Using getters/setters effectively for reactivity if needed, or just public properties)
-    // Reactive State (Svelte 5 Runes)
     public state = $state<{
         loading: ModelLoadingState;
         loadingStep: string | null;
@@ -183,52 +181,43 @@ export class Live2DController {
         useCustomInitialPositioning: true,
     });
 
-    // Data Cache
-    private motionMap: Record<number, MotionData> = {}; // MotionID -> Data
-    private voiceMap: Record<number, VoiceData> = {}; // MotionID -> Voice Data
+    private motionMap: Record<number, MotionData> = {};
+    private voiceMap: Record<number, VoiceData> = {};
     private normalVoiceMap: Record<number, VoiceData> = {}; // Fallback for idle-only damaged variants
     private currentCharacterCode: string = '';
     private currentVariant: string = '';
     private assetBaseUrl: string = '/assets';
     private fileToMotionId: Record<string, number> = {}; // MotionFile -> MotionID mapping
 
-    // Motion metadata for progress tracking
     private motionMetadata: Record<string, Array<{ duration: number; fps: number; probability?: number }>> = {};
     private motionGroups: string[] = [];
 
-    // Viewport State
     private isDragging = false;
-    private isForcedDrag = false; // Track middle-click forced drag
+    private isForcedDrag = false;
     private dragStart = { x: 0, y: 0 };
     private modelStart = { x: 0, y: 0 };
     private baseScale = 0.1;
     private defaultZoom = 1; // Default zoom from model metadata (Layout.Scale)
-    private zoomSpring: Spring<number>;
+    private zoomSpring: Spring;
 
     private resizeObserver: ResizeObserver | null = null;
 
-    // Gesture management
     private gestureManager: any = null;
     private pinchZoomEnabled = true;
     private directZoom: number | null = null; // When set, use this zoom value instead of spring (for hard: true updates)
 
-    // Load state tracking
-    private loadId = 0; // Monotonically increasing ID to track latest load request
+    private loadId = 0;
 
-    // Cubism4 initialization state
     private cubism4Promise: Promise<void>;
 
-    // Hitbox debug visualization
     private hitAreaFrames?: any;
 
-    // Motion tracking for progress slider
     private motionStartTime = 0;
     private motionDuration = 0;
 
-    // Audio playback tracking
     private currentAudio: HTMLAudioElement | null = null;
     private audioPromiseCache: Map<string, Promise<string>> = new Map(); // key -> Promise<BlobURL>
-    private audioProgressInterval: number | null = null; // For audio-only progress tracking
+    private audioProgressInterval: number | null = null;
     private audioPlayPending: boolean = false; // Held while an audio-only voiceline loads and plays
 
     // Resolves once `this.app` is initialized. PIXI v8's Application.init() is async,
@@ -239,19 +228,12 @@ export class Live2DController {
         this.canvas = canvas;
         this.app = new PIXI.Application();
 
-        // Initialize spring for smooth zoom with exponential scaling
-        this.zoomSpring = new Spring(0, {
-            stiffness: 0.1,
-            damping: 0.8,
-        });
+        this.zoomSpring = new Spring(0, { stiffness: 0.1, damping: 0.8 });
 
-        // Expose PIXI for Live2D plugin
         (window as any).PIXI = PIXI;
 
-        // Configure Cubism4 before loading any models
         this.cubism4Promise = this.initializeCubism4();
 
-        // Resize listener
         window.addEventListener('resize', this.handleResize);
 
         this.initPromise = this.initPixi();
@@ -291,10 +273,8 @@ export class Live2DController {
             preference: 'webgl',
         });
 
-        // Auto-start render with spring update loop
         this.startRendering();
 
-        // Initialize caption text overlay
         this.captionText = new PIXI.Text({
             text: '',
             style: {
@@ -377,20 +357,17 @@ export class Live2DController {
     }
 
     private startRendering() {
-        this.app.ticker.add(() => {
-            // Update model scale from spring animation or direct zoom
+        this.app.ticker.add((ticker) => {
+            this.zoomSpring.update(ticker.deltaTime);
+
             if (this.model) {
-                const ZOOM_BASE = 1.1; // Smoother zoom steps
-                // Use direct zoom (hard: true updates) if set, otherwise use spring animation
                 const zoomValue = this.directZoom !== null ? this.directZoom : this.zoomSpring.current;
-                // Apply zoom slider as offset to model's default zoom
                 // Final Scale = Base (Fit to Screen) * Default (Layout.Scale) * UserOffset (Spring/Direct)
                 const userScaleFactor = Math.pow(ZOOM_BASE, zoomValue);
                 const targetScale = this.baseScale * this.defaultZoom * userScaleFactor;
                 this.model.scale.set(targetScale, targetScale);
             }
 
-            // Update caption text overlay (use screen dimensions, not renderer which is supersampled)
             if (this.captionText) {
                 if (
                     this.state.renderCaptionsOnCanvas &&
@@ -405,14 +382,12 @@ export class Live2DController {
                 }
             }
 
-            // Update motion progress
             if (this.state.isMotionPlaying) {
                 const duration = this.motionDuration;
                 const elapsed = Date.now() - this.motionStartTime;
                 const progress = Math.max(0, Math.min(elapsed / (duration * 1000), 1));
                 this.state.motionProgress = progress;
 
-                // Auto-stop if motion duration exceeded
                 if (progress >= 1) {
                     this.state.isMotionPlaying = false;
                     this.state.motionProgress = 0;
@@ -433,10 +408,8 @@ export class Live2DController {
         assetBaseUrl: string = '/assets',
         normalVoiceData?: any,
     ): Promise<boolean> {
-        // Increment load ID to invalidate previous pending loads
         const myLoadId = ++this.loadId;
 
-        // Force reset 'READY' state to allow re-loading the same character
         if (this.state.loading === ModelLoadingState.READY) {
             this.state.loading = ModelLoadingState.IDLE;
         }
@@ -446,26 +419,21 @@ export class Live2DController {
             await this.initPromise;
             if (this.loadId !== myLoadId) return false;
 
-            // Stop any currently playing audio immediately
             this.stopAudio();
 
-            // Ensure Cubism4 is configured before loading model
             this.state.loadingStep = 'Preparing viewer';
             await this.cubism4Promise;
 
-            // Check if we've been superseded during await
             if (this.loadId !== myLoadId) return false;
 
             this.state.loading = ModelLoadingState.LOADING;
             this.state.error = null;
             this.state.motionGroups = [];
 
-            // Reset zoom state if requested
             if (shouldResetZoom) {
                 this.resetZoom();
             }
 
-            // Reset animation/progress state
             this.state.showProgressBar = false;
             this.state.isMotionPlaying = false;
             this.state.motionProgress = 0;
@@ -475,7 +443,6 @@ export class Live2DController {
             this.motionStartTime = 0;
             this.motionDuration = 0;
 
-            // Clear audio cache for new character to free memory
             this.audioPromiseCache.forEach(async (p) => {
                 try {
                     const url = await p;
@@ -489,13 +456,11 @@ export class Live2DController {
             // Note: We DO NOT cleanup the previous model yet to prevent flickering.
             // We verify the new model fully loads first (Swap pattern).
 
-            // 1. Resolve Directory
             // Use directory if present (from extract-live2d.py), else fall back to code
             const dirName = entry.directory || entry.code;
             this.currentCharacterCode = entry.code;
             this.assetBaseUrl = assetBaseUrl;
 
-            // 2. Load Model
             const basePath = `${assetBaseUrl}/models/${dirName}/${variant}`;
             const modelUrl = `${basePath}/${dirName}.model3.json`;
 
@@ -503,7 +468,6 @@ export class Live2DController {
 
             const { Live2DModel } = await import('untitled-pixi-live2d-engine/cubism');
 
-            // Check if superseded
             if (this.loadId !== myLoadId) return false;
 
             // Load model via URL with custom interaction (focus only on left click down)
@@ -519,29 +483,23 @@ export class Live2DController {
                 throw new Error(`Failed to load Live2D model: ${loadErr.message}`);
             }
 
-            // Check if superseded after heavy network load
             if (this.loadId !== myLoadId) {
                 newModel.destroy({ children: true });
                 return false;
             }
 
-            // 3. Load Metadata (motion durations from model, voice data)
             this.state.loadingStep = 'Loading animations';
 
-            // Cleanup previous model
             this.cleanupModel();
             this.model = newModel;
             this.modelUrl = modelUrl;
             this.currentCharacterCode = entry.code;
             this.currentVariant = variant;
 
-            // Extract default zoom from model metadata
             this.extractDefaultZoom();
 
-            // Extract motion groups from model
             this.extractMotionGroupsFromModel();
 
-            // Manually preload all motions
             const currentModel = this.model;
             if (!currentModel) throw new Error('Model not initialized during setup');
 
@@ -572,10 +530,8 @@ export class Live2DController {
                 this.loadVoiceData(String(entry.id), voiceData, normalVoiceData),
             ]);
 
-            // Preload all voice lines in background
             this.preloadAllVoiceLines();
 
-            // 4. Setup Model
             this.state.loadingStep = 'Setting up';
             this.state.motionGroups = [...this.motionGroups]; // Update UI now that metadata is ready
 
@@ -595,7 +551,6 @@ export class Live2DController {
             this.state.loadingStep = '';
             this.state.loading = ModelLoadingState.READY;
 
-            // Populate parameters and parts state for UI components
             this.refreshParametersState();
             this.refreshPartsState();
 
@@ -610,10 +565,7 @@ export class Live2DController {
         }
     }
 
-    // -- Data Loading --
-
     private extractDefaultZoom() {
-        // Extract default zoom from model's Layout.Scale in model3.json
         // We must access internalModel.settings.json (raw) to find it reliably.
         const model = this.model;
         if (!model) return; // Should not happen if called correctly
@@ -659,14 +611,12 @@ export class Live2DController {
     }
 
     private extractMotionGroupsFromModel() {
-        // Extract motion groups from loaded model's animation structure
         const model = this.model;
         if (!model) return;
 
         const internalModel = model.internalModel;
         if (!internalModel) throw new Error('Model internal structure not ready');
 
-        // Access motion manager definitions
         if (!internalModel.motionManager || !internalModel.motionManager.definitions) {
             throw new Error('Motion manager definitions not available');
         }
@@ -675,7 +625,6 @@ export class Live2DController {
     }
 
     private async extractMotionDurationsFromModel() {
-        // Extract motion durations from loaded model's motion manager
         const model = this.model;
         if (!model) return;
 
@@ -691,14 +640,12 @@ export class Live2DController {
             throw new Error('motionGroups not available on motion manager');
         }
 
-        // Iterate through all motion groups
         for (const groupName of this.motionGroups) {
             const loadedMotions = motionManager.motionGroups[groupName];
             if (!loadedMotions) {
                 throw new Error(`No loaded motions found for group: ${groupName}`);
             }
 
-            // If no motions loaded yet, that's an error
             if (loadedMotions.length === 0) {
                 throw new Error(
                     `No motions loaded for group ${groupName}. motionGroups content: ${JSON.stringify(Object.keys(motionManager.motionGroups || {}))}`,
@@ -716,7 +663,6 @@ export class Live2DController {
                     );
                 }
 
-                // Duration is stored in _motionData.duration (already in seconds)
                 const internalMotion = motion as unknown as PrivateMotion;
                 if (!internalMotion._motionData || internalMotion._motionData.duration === undefined) {
                     throw new Error(
@@ -752,7 +698,6 @@ export class Live2DController {
 
         for (const m of Object.values(modelMotions)) {
             const motion = m as MotionData;
-            // Store by motion ID for direct lookup
             this.motionMap[motion.id] = motion;
 
             // Build file -> motion ID map for onMotionStart lookup
@@ -763,7 +708,6 @@ export class Live2DController {
                 const motion3Path = motion.motion_name.replace('.mtn', '.motion3.json');
                 this.fileToMotionId[motion3Path] = motion.id;
 
-                // Also store by basename for flexibility
                 const basename3 = (motion.motion_name.split('/').pop() || '').replace('.mtn', '.motion3.json');
                 this.fileToMotionId[basename3] = motion.id;
             }
@@ -789,8 +733,6 @@ export class Live2DController {
         this.normalVoiceMap = typeof normalVoiceData === 'object' && normalVoiceData ? normalVoiceData : {};
     }
 
-    // -- Background Management --
-
     private bgTransform = { x: 0, y: 0, scale: 1 };
 
     public async setBackground(url: string | null): Promise<void> {
@@ -813,7 +755,6 @@ export class Live2DController {
         try {
             // Texture.fromURL doesn't exist in Pixi v8; Assets.load is the replacement.
             const resource = await PIXI.Assets.load(url);
-            // Check if superseded or destroyed? (Simplification: assume linear usage for now)
 
             // GIFs load as a GifSource, not a Texture, and need GifSprite to animate.
             const { GifSprite } = await import('pixi.js/gif');
@@ -823,10 +764,8 @@ export class Live2DController {
                     : new PIXI.Sprite(resource);
             this.bgUrl = url;
             this.bgSprite.anchor.set(0.5);
-            // Apply cached transform immediately
             this.applyBackgroundTransform();
 
-            // Add to the very bottom (index 0)
             this.app.stage.addChildAt(this.bgSprite, 0);
         } catch (err) {
             // Silently ignore background loading errors
@@ -841,7 +780,6 @@ export class Live2DController {
     private applyBackgroundTransform() {
         if (!this.bgSprite) return;
 
-        // Start from center of screen (logical coordinates)
         const screenW = this.app.screen.width;
         const screenH = this.app.screen.height;
         const centerX = screenW / 2;
@@ -853,8 +791,6 @@ export class Live2DController {
         this.bgSprite.scale.set(scale);
     }
 
-    // -- Repeat Parameters --
-
     // moc3 "repeat" params should wrap at min/max instead of clamping. The SDK defaults to
     // overriding that flag off, so we opt in to let moc3-authored repeat parameters wrap.
     private setupRepeatParameters(model: Live2DModel) {
@@ -862,57 +798,38 @@ export class Live2DController {
         coreModel?.setOverrideFlagForModelParameterRepeat?.(false);
     }
 
-    // -- Interaction --
-
     private setupInteraction() {
         const model = this.model;
         if (!model) return;
 
-        // Ensure Pixi can receive events on this model
         model.eventMode = 'static';
 
-        // Enable hit testing for tap interactions
         model.automator.autoHitTest = true;
 
-        // Initialize with always-focus if enabled (moved up to ensure clean state)
         if (this.state.isAlwaysFocus) {
             window.addEventListener('pointermove', this.handleGlobalPointerMove);
             window.addEventListener('touchmove', this.handleGlobalTouchMove, { passive: false });
         } else {
-            // Default to center if not focused
             if (model.internalModel?.focusController) {
-                // Guard against missing focusController
                 model.internalModel.focusController.focus(0, 0, true);
             }
         }
 
         model.on('pointerdown', (event: any) => {
-            // Only handle "Hit" testing via PIXI events here if needed,
-            // but the library usually handles 'hit' event separately.
-            // We removed the drag logic here to avoid conflict with GunLive2D.
         });
 
-        // Handle pointer up/window up only for focus cleanup if needed
-        // (GunLive2D calls endDrag, so we just need to ensure focus resets if not always-focus)
-        // Use class method for cleanup
         model.on('pointerup', this.handleGlobalPointerUp);
         window.addEventListener('pointerup', this.handleGlobalPointerUp);
 
-        // Initialize with always-focus if enabled
         if (this.state.isAlwaysFocus) {
-            // Add global move listener for always-focus
-            // We use a custom handler to ensure we can control the magnitude
             window.removeEventListener('pointermove', this.handleGlobalPointerMove);
             window.addEventListener('pointermove', this.handleGlobalPointerMove);
-            // Touch support for always focus
             window.addEventListener('touchmove', this.handleGlobalTouchMove, { passive: false });
         } else {
             model.internalModel.focusController.focus(0, 0, true);
         }
 
-        // Handle tap interactions
         model.on('hit', (hitAreas: string[]) => {
-            // Prevent overlapping animations
             if (this.state.showProgressBar) {
                 return;
             }
@@ -953,8 +870,6 @@ export class Live2DController {
 
             const canvasElement = this.canvas;
 
-            // Setup gesture interaction for pinch-zoom (2+ fingers only, takes priority)
-            // Drag is handled by pointer events in GunLive2D.svelte (works perfectly there)
             let pinchStartScaleMultiplier = 0; // Track UI target zoom at gesture start
             interact(canvasElement)
                 .gesturable({})
@@ -963,7 +878,6 @@ export class Live2DController {
                         event.preventDefault();
                         return;
                     }
-                    // Gesture requires 2+ pointers automatically by interact.js
                     isGestureActive = true;
                     // Start from the rendered value so interrupting a slider animation cannot jump.
                     pinchStartScaleMultiplier = this.getCurrentZoom();
@@ -971,17 +885,17 @@ export class Live2DController {
                 .on('gesturemove', (event: any) => {
                     if (!this.model || !this.state.isMoveMode || !this.pinchZoomEnabled || !isGestureActive) return;
 
-                    // event.scale is the ratio of current distance to start distance
-                    const ZOOM_BASE = 1.1;
-
-                    // Calculate target zoom: start from UI zoom baseline, apply gesture scale
                     // No limits here - model can zoom to any level, only UI slider has limits
                     const scaleFactor = Math.pow(ZOOM_BASE, pinchStartScaleMultiplier);
                     const gestureScale = scaleFactor * event.scale;
                     const targetScaleMultiplier = Math.log(gestureScale) / Math.log(ZOOM_BASE);
 
-                    // Update zoom instantly during gesture with hard: true (skip spring animation for responsiveness)
-                    this.setZoom(targetScaleMultiplier, { hard: true });
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.zoomAtPoint(
+                        targetScaleMultiplier,
+                        event.clientX - rect.left,
+                        event.clientY - rect.top,
+                    );
                 })
                 .on('gestureend', (event: any) => {
                     if (!isGestureActive) return;
@@ -1047,7 +961,6 @@ export class Live2DController {
             }
         }
 
-        // Collect all motion groups and their combined weights
         const groupWeights: Record<string, number> = {};
 
         for (const area of hitAreas) {
@@ -1057,7 +970,6 @@ export class Live2DController {
                 const definitions = (model.internalModel.motionManager.definitions as any)[groupName];
                 if (!definitions || definitions.length === 0) continue;
 
-                // Calculate average weight for this group
                 const weights = definitions.map((def: any) => {
                     const meta = this.findMotionMetadata(def.File);
                     return meta?.probability ?? 1.0;
@@ -1067,7 +979,6 @@ export class Live2DController {
             }
         }
 
-        // Select group based on combined weights
         const groupNames = Object.keys(groupWeights);
         if (groupNames.length === 0) {
             this.stopAudioProgress(); // Release the slot the hit handler claimed
@@ -1086,7 +997,6 @@ export class Live2DController {
             }
         }
 
-        // Now select motion within the chosen group using weighted random
         const definitions = (model.internalModel.motionManager.definitions as any)[selectedGroupName];
         let selectedIndex = 0;
 
@@ -1096,7 +1006,6 @@ export class Live2DController {
             return { index, prob: meta?.probability ?? 1.0 };
         });
 
-        // Weighted Random
         const motionTotalWeight = candidates.reduce((sum: number, c: any) => sum + c.prob, 0);
         let motionRandom = Math.random() * motionTotalWeight;
 
@@ -1108,18 +1017,14 @@ export class Live2DController {
             }
         }
 
-        // Update State
         this.state.currentMotionGroup = selectedGroupName;
         this.state.currentMotionIndex = selectedIndex;
 
-        // Fetch actual duration for this tap motion instead of using hardcoded 3 seconds
         this.motionDuration = this.getMotionDuration(selectedGroupName, selectedIndex);
 
-        // Get voice audio URL if available
         let audioUrl: string | undefined;
         const def = definitions[selectedIndex];
         if (def && def.File) {
-            // Find motion ID from File path
             let motionId = this.findMotionId(def.File);
 
             if (motionId !== undefined && this.voiceMap[motionId]?.voice_key) {
@@ -1131,23 +1036,19 @@ export class Live2DController {
             }
         }
 
-        // Play motion without audio - we'll handle timing manually
         model.motion(selectedGroupName, selectedIndex, 2, { loop: false }).then(() => {
             const audioDelay = this.resolveAudioDelay(def?.File);
 
-            // If audio URL exists, play it after the delay
             if (audioUrl) {
                 const playAudioWithDelay = async () => {
                     if (audioDelay > 0) {
                         await new Promise((resolve) => setTimeout(resolve, audioDelay * 1000));
                     }
                     try {
-                        // Stop any current audio
                         if (this.currentAudio) {
                             this.currentAudio.pause();
                             this.currentAudio = null;
                         }
-                        // Load and play audio
                         const blobUrl = await this.loadAudio(audioUrl);
                         const audio = new Audio(blobUrl);
                         this.currentAudio = audio;
@@ -1168,18 +1069,15 @@ export class Live2DController {
     }
 
     private findMotionId(filePath: string): number | undefined {
-        // Try exact match
         if (this.fileToMotionId[filePath]) {
             return this.fileToMotionId[filePath];
         }
 
-        // Try basename match
         const basename = filePath.split('/').pop() || '';
         if (this.fileToMotionId[basename]) {
             return this.fileToMotionId[basename];
         }
 
-        // Try replacing extension
         const jsonPath = filePath.replace('.mtn', '.motion3.json');
         if (this.fileToMotionId[jsonPath]) {
             return this.fileToMotionId[jsonPath];
@@ -1187,8 +1085,6 @@ export class Live2DController {
 
         return undefined;
     }
-
-    // -- Audio Handling --
 
     private getAudioUrl(charCode: string, voiceKey: string): string {
         // charCode is STC's own voice bank id, which can differ from the skin code (e.g. HK416_0).
@@ -1210,7 +1106,6 @@ export class Live2DController {
                 const blobUrl = URL.createObjectURL(blob);
                 return blobUrl;
             } catch (err) {
-                // Fallback: try alternate variant (add/remove MOD suffix)
                 const fallbackUrl = this.getFallbackAudioUrl(url);
                 if (fallbackUrl && fallbackUrl !== url) {
                     try {
@@ -1221,7 +1116,6 @@ export class Live2DController {
                         const blobUrl = URL.createObjectURL(blob);
                         return blobUrl;
                     } catch (fallbackErr) {
-                        // Both URLs failed
                         this.audioPromiseCache.delete(url);
                         throw fallbackErr;
                     }
@@ -1237,7 +1131,6 @@ export class Live2DController {
     }
 
     private getFallbackAudioUrl(originalUrl: string): string {
-        // Extract voiceKey from original URL
         // URL format: {assetBaseUrl}/audio/{baseId}/{baseId}_{voiceKey}_JP.ogg
         const voiceKeyPattern = /_([A-Z0-9_]+)_JP\.ogg$/i;
         const match = originalUrl.match(voiceKeyPattern);
@@ -1248,10 +1141,8 @@ export class Live2DController {
 
         const voiceKey = match[1];
 
-        // Extract baseId from currentCharacterCode (same logic as getAudioUrl)
         let baseId = this.currentCharacterCode.split('_')[0].toUpperCase();
 
-        // Determine fallback baseId (toggle MOD suffix)
         let fallbackBaseId: string;
         if (baseId.toUpperCase().endsWith('MOD')) {
             fallbackBaseId = baseId.slice(0, -3);
@@ -1259,7 +1150,6 @@ export class Live2DController {
             fallbackBaseId = baseId + 'MOD';
         }
 
-        // Reconstruct URL with fallback baseId (same format as getAudioUrl)
         return `${this.assetBaseUrl}/audio/${fallbackBaseId}/${fallbackBaseId}_${voiceKey}_JP.ogg`;
     }
 
@@ -1269,15 +1159,11 @@ export class Live2DController {
         for (const voice of Object.values(this.voiceMap)) {
             if (voice.voice_key) {
                 const url = this.getAudioUrl(voice.char_code, voice.voice_key);
-                // We just trigger the load, we don't await individual ones here unless we want to track progress
 
-                // Track promise completion to update UI state
                 const voiceKey = voice.voice_key;
                 this.loadAudio(url)
                     .then(() => {
                         this.state.loadedVoiceKeys.add(voiceKey);
-                        // Force update for Set reactivity (Svelte 5 Set is reactive but we might need to trigger dependents)
-                        // Better yet, update the group map
                         this.updateGroupAudioState(voiceKey);
                     })
                     .catch(() => { });
@@ -1290,7 +1176,6 @@ export class Live2DController {
             }
         }
 
-        // Optional: track total progress
         await Promise.allSettled(promises);
     }
 
@@ -1337,7 +1222,6 @@ export class Live2DController {
             const audio = new Audio(blobUrl);
             this.currentAudio = audio;
 
-            // Resume context if needed (browsers block autoplay)
             try {
                 await audio.play();
             } catch (e) {
@@ -1405,19 +1289,16 @@ export class Live2DController {
 
             const audioDuration = (model.internalModel?.motionManager as any)?.currentAudio?.duration ?? 0;
 
-            // Set up progress tracking
             this.state.showProgressBar = true;
             this.state.isMotionPlaying = true;
             this.state.caption = voice.caption;
             this.motionStartTime = Date.now();
             this.motionDuration = audioDuration;
 
-            // Clear any existing interval
             if (this.audioProgressInterval !== null) {
                 clearInterval(this.audioProgressInterval);
             }
 
-            // Update progress every 100ms
             this.audioProgressInterval = window.setInterval(() => {
                 const audio = (model.internalModel?.motionManager as any)?.currentAudio;
                 if (!audio || !audio.isPlaying) {
@@ -1468,20 +1349,16 @@ export class Live2DController {
     getUnmappedVoicelines(): Array<{ motionId: number; voice_key: string; caption: string }> {
         const unmappedMap = new Map<string, { motionId: number; voice_key: string; caption: string }>();
 
-        // Check all motion IDs in voiceMap
         for (const [motionIdStr, voice] of Object.entries(this.voiceMap)) {
             const motionId = Number(motionIdStr);
             const motionData = this.motionMap[motionId];
 
-            // Skip if no voice data
             if (!voice || !voice.voice_key) continue;
 
-            // Skip if motion has a file (means it's mapped to a motion group)
             if (motionData && motionData.motion_name && motionData.motion_name !== 'motions/idle.mtn' && motionData.motion_name !== 'motions/daiji.mtn' && motionData.motion_name !== 'motions/daiji_idle_01.mtn') {
                 continue;
             }
 
-            // Deduplicate by voice_key
             if (!unmappedMap.has(voice.voice_key)) {
                 unmappedMap.set(voice.voice_key, {
                     motionId,
@@ -1510,7 +1387,6 @@ export class Live2DController {
 
     private findMotionMetadata(file: string): MotionData | undefined {
         // file: "motions/touch_1.mtn"
-        // Lookup motion ID from file path, then get metadata
         const motionId = this.fileToMotionId[file] || this.fileToMotionId[file.split('/').pop() || ''];
         if (motionId) {
             return this.motionMap[motionId];
@@ -1522,8 +1398,6 @@ export class Live2DController {
         const meta = file ? this.findMotionMetadata(file) : undefined;
         return meta ? meta.delay / 1000 : 0;
     }
-
-    // -- Viewport Controls --
 
     getMotionGroups(): string[] {
         return this.motionGroups;
@@ -1582,14 +1456,12 @@ export class Live2DController {
     private async playMotionWithAudio(groupName: string, motionIndex: number) {
         if (!this.model) return;
 
-        // Get motion definition
         const definitions = (this.model.internalModel.motionManager.definitions as any)[groupName];
         if (!definitions || !definitions[motionIndex]) return;
 
         const def = definitions[motionIndex];
         if (!def.File) return;
 
-        // Find voice for this motion
         const motionId = this.findMotionId(def.File);
         let audioUrl: string | undefined;
 
@@ -1603,14 +1475,11 @@ export class Live2DController {
 
         const audioDelay = this.resolveAudioDelay(def.File);
 
-        // Enable/disable library lip sync based on forceLipSync setting
         if (this.model?.internalModel) {
             (this.model.internalModel as any).lipSync = this.state.forceLipSync;
         }
 
-        // Start motion with or without integrated audio+lipsync
         if (this.state.forceLipSync && audioUrl) {
-            // Use library's integrated audio + additive lip sync
             const blobUrl = await this.loadAudio(audioUrl);
 
             if (audioDelay > 0) {
@@ -1622,7 +1491,6 @@ export class Live2DController {
             // Without library lip sync, audio isn't tied to the motion call so timing is handled manually below
             await this.model.motion(groupName, motionIndex, 2, { loop: false });
 
-            // Play audio manually with delay if available
             if (audioUrl) {
                 const playAudioWithDelay = async () => {
                     try {
@@ -1632,7 +1500,6 @@ export class Live2DController {
                             await new Promise((resolve) => setTimeout(resolve, audioDelay * 1000));
                         }
 
-                        // Stop any current audio and play new one
                         if (this.currentAudio) {
                             this.currentAudio.pause();
                             this.currentAudio = null;
@@ -1658,13 +1525,11 @@ export class Live2DController {
 
     async playMotionGroup(groupName: string, index?: number) {
         if (!this.model) return;
-        // Prevent overlapping animations
         if (this.state.showProgressBar) {
             return;
         }
         const motionIndex = index ?? 0;
 
-        // Get motion duration (preloaded during initialization)
         this.motionDuration = this.getMotionDuration(groupName, motionIndex);
 
         this.state.showProgressBar = true;
@@ -1689,12 +1554,26 @@ export class Live2DController {
         if (options?.hard) {
             // Direct inputs stay synchronised with the spring so releasing a gesture cannot rebound.
             this.directZoom = multiplier;
-            void this.zoomSpring.set(multiplier, { instant: true });
+            this.zoomSpring.set(multiplier, { instant: true });
         } else {
-            // Use spring animation for smooth transition
             this.directZoom = null;
-            this.zoomSpring.target = multiplier;
+            this.zoomSpring.set(multiplier);
         }
+    }
+
+    // Keeps the canvas point under the cursor or pinch midpoint fixed while the model scales
+    zoomAtPoint(multiplier: number, x: number, y: number) {
+        if (!this.model) {
+            this.setZoom(multiplier, { hard: true });
+            return;
+        }
+
+        const ratio = Math.pow(ZOOM_BASE, multiplier - this.getCurrentZoom());
+        this.model.position.set(
+            x + (this.model.position.x - x) * ratio,
+            y + (this.model.position.y - y) * ratio,
+        );
+        this.setZoom(multiplier, { hard: true });
     }
 
     getCurrentZoom() {
@@ -1712,11 +1591,9 @@ export class Live2DController {
     startDrag(x: number, y: number, force: boolean = false) {
         if (!this.model) return;
 
-        // Cache initial drag coordinates for both drag and focus tracking
         this.dragStart = { x, y };
         this.modelStart = { x: this.model.position.x, y: this.model.position.y };
 
-        // Only enable dragging if forced (middle click) or in move mode
         if (force || this.state.isMoveMode) {
             this.isDragging = true;
             this.isForcedDrag = force;
@@ -1731,7 +1608,6 @@ export class Live2DController {
             const dy = y - this.dragStart.y;
             this.model.position.set(this.modelStart.x + dx, this.modelStart.y + dy);
         } else {
-            // Process move for focus if not actively dragging (e.g. hovering or verify focus update)
             this.processMove(x, y);
         }
     }
@@ -1740,8 +1616,6 @@ export class Live2DController {
         this.isDragging = false;
         this.isForcedDrag = false;
     }
-
-    // -- Hitbox Debug --
 
     // untitled-pixi-live2d-engine's own HitAreaFrames tool extends Graphics and calls
     // addChild on itself, which Pixi v8 no longer allows (only Containers may have children).
@@ -1827,21 +1701,14 @@ export class Live2DController {
         }
     }
 
-    // -- Utilities --
-
     fitModelToScreen(displacement?: { x?: number; y?: number }) {
         const model = this.model;
         if (!model) return;
 
-        // 1. Reset scale to 1.0 to measure native bounds
         model.scale.set(1.0);
 
-        // 2. Center the anchor
         model.anchor.set(0.5, 0.5);
 
-        // 3. Measure native size
-        // Note: Live2D models in Pixi can have deferred bounds updates.
-        // We use internalModel original size if available, or container bounds.
         const width = model.internalModel.width || model.width;
         const height = model.internalModel.height || model.height;
 
@@ -1850,7 +1717,6 @@ export class Live2DController {
             return;
         }
 
-        // 4. Calculate Scale-to-Fit
         // Use logical display dimensions scaled by 2 to account for the fixed resolution multiplier
         // This balances the fit across all device pixel ratios
         const canvasWidth = this.canvas.clientWidth * 2;
@@ -1859,7 +1725,6 @@ export class Live2DController {
         const scaleX = canvasWidth / width;
         const scaleY = canvasHeight / height;
 
-        // Use the smaller scale to ensure it fits entirely
         // Multiplied by 0.85 for breathing room (padding)
         let fitScale = Math.min(scaleX, scaleY) * 0.85;
 
@@ -1868,7 +1733,6 @@ export class Live2DController {
         let centerX = window.innerWidth / 2;
         let centerY = window.innerHeight / 2;
 
-        // Apply custom displacement if provided (e.g., for tablet side panel offset)
         if (displacement) {
             centerX += displacement.x ?? 0;
             centerY += displacement.y ?? 0;
@@ -1904,12 +1768,10 @@ export class Live2DController {
                         offsetY = 0;
                     }
 
-                    // Adjust center position
                     centerX -= offsetX * fitScale;
                     centerY -= offsetY * fitScale;
                 }
 
-                // Manual overrides take highest priority for per-model position/scale adjustments
                 if (manualOverride && typeof manualOverride.y === 'number') {
                     // Apply offset scaled by fitScale to maintain consistency across resolutions
                     const manualLift = manualOverride.y * fitScale;
@@ -2034,7 +1896,6 @@ export class Live2DController {
 
         const motionManager = model.internalModel.motionManager as unknown as ExtendedMotionManager;
 
-        // Stop all currently playing motions
         if (typeof motionManager.stopAllMotions === 'function') {
             motionManager.stopAllMotions();
         }
@@ -2046,16 +1907,13 @@ export class Live2DController {
 
         const motionManager = model.internalModel.motionManager as unknown as ExtendedMotionManager;
 
-        // Stop all currently playing motions
         if (typeof motionManager.stopAllMotions === 'function') {
             motionManager.stopAllMotions();
         }
 
-        // Disable idle motions so they don't auto-start
         this.originalIdleGroup = motionManager.groups.idle;
         motionManager.groups.idle = null;
 
-        // Stop progress bar immediately
         this.state.showProgressBar = false;
         this.state.motionProgress = 0;
         this.motionStartTime = 0;
@@ -2068,7 +1926,6 @@ export class Live2DController {
 
         const motionManager = model.internalModel.motionManager;
 
-        // Restore idle motions
         if (this.originalIdleGroup) {
             motionManager.groups.idle = this.originalIdleGroup;
         }
@@ -2088,7 +1945,6 @@ export class Live2DController {
             coreModel.setParameterValueByIndex(param.index, value);
             model.update(0);
 
-            // Optimistically update local state to avoid full re-render
             param.value = value;
 
             this.paramOverrides.set(param.index, value);
@@ -2193,7 +2049,6 @@ export class Live2DController {
     refreshParametersState() {
         if (!this.model) return;
         const params = this.getAvailableParameters();
-        // Map to ensure missing is always boolean (not optional)
         this.state.parameters = params.map((p) => ({
             ...p,
             // A pinned slider tracks the user's value, not what the animation wrote
@@ -2235,7 +2090,6 @@ export class Live2DController {
         const index = this.state.parts.find((p) => p.id === id)?.index;
         if (index === undefined) return;
         coreModel.setPartOpacityByIndex?.(index, opacity);
-        // Update state to reflect change
         this.refreshPartsState();
     }
 
@@ -2294,17 +2148,11 @@ export class Live2DController {
     setAlwaysFocus(enabled: boolean) {
         this.state.isAlwaysFocus = enabled;
         if (this.model) {
-            // We don't use model.automator.autoFocus anymore because it normalizes magnitude
-            // We handle it manually in handleGlobalPointerMove
 
             if (enabled) {
                 window.addEventListener('pointermove', this.handleGlobalPointerMove);
-                // Trigger an initial update with current mouse position if possible,
-                // but we don't track mouse globally without events.
-                // It will update on next move.
             } else {
                 window.removeEventListener('pointermove', this.handleGlobalPointerMove);
-                // Reset to center
                 (this.model.internalModel as unknown as ExtendedInternalModel).focusController.focus(0, 0);
             }
         }
@@ -2316,7 +2164,6 @@ export class Live2DController {
     };
 
     private cleanupModel() {
-        // Clean up hitbox debug frames first
         if (this.hitAreaFrames) {
             try {
                 this.model?.removeChild(this.hitAreaFrames);
@@ -2336,7 +2183,6 @@ export class Live2DController {
 
         if (this.model) {
             try {
-                // Remove from stage first
                 this.app.stage.removeChild(this.model);
             } catch (e) {
                 // Already removed or not in stage
@@ -2349,7 +2195,6 @@ export class Live2DController {
             this.model = undefined;
             this.modelUrl = null;
         }
-        // Clear cached data
         this.motionMap = {};
         this.voiceMap = {};
         this.fileToMotionId = {};
@@ -2389,23 +2234,19 @@ export class Live2DController {
     private processMove(clientX: number, clientY: number) {
         if (!this.model) return;
 
-        // Prevent focus tracking when actively dragging in move mode
         if (this.isDragging) {
             return;
         }
 
-        // Focus mode (look at cursor)
         const rect = this.canvas.getBoundingClientRect();
         const x = clientX - rect.left;
         const y = clientY - rect.top;
 
-        // Convert to model space using the model's transform
         const tempPoint = new PIXI.Point(x, y);
         const modelPoint = new PIXI.Point();
 
         this.model.toModelPosition(tempPoint, modelPoint);
 
-        // Normalize to [-1, 1] relative to model original size
         const internalModel = this.model.internalModel as unknown as ExtendedInternalModel & {
             originalWidth: number;
             originalHeight: number;

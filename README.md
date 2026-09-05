@@ -1,5 +1,9 @@
 # GFL Live2D Viewer
 
+## [**Try the live demo**](https://gfl-live2d.github.io/)
+
+[![Viewer](https://img.shields.io/badge/Viewer-gfl--live2d.github.io-2ea44f?style=for-the-badge)](https://gfl-live2d.github.io/)
+
 Browser-based Live2D model viewer for Girls' Frontline. Built with SvelteKit 5, PixiJS 8, and [untitled-pixi-live2d-engine](https://github.com/Untitled-Story/untitled-pixi-live2d-engine).
 
 This app is currently in beta. Assets are not included in this repository. You supply your own.
@@ -11,10 +15,15 @@ This app is currently in beta. Assets are not included in this repository. You s
 - Motion and voice playback with caption overlay.
 - Pinch/scroll zoom, middle-click pan, right-click background drag.
 - Background image drop/paste.
-- Deep link: `?model=<gun-code>&variant=<variant-name>`.
-- Hide UI via `?ui=0`, or drop it entirely with `?only=<gun-code>`.
-- Iframe-friendly: the whole page is embeddable, optionally with a transparent background.
+- Deep link: `?model=<gun-code>&variant=<variant-name>`, or a path route like `/pa-15/damaged`.
+- Hide UI via `?ui=0`, or drop it entirely with a path route or `?only=<gun-code>`.
+- Iframe-friendly: the app generates a ready embed snippet for the selected model.
 - Keyboard shortcuts (M move, E focus, 0 reset background, Ctrl+V paste).
+
+## TODO
+
+- Multi-instance Live2D: load several models at once, control them independently, and layer them.
+- Browse and pick from default static and Live2D backgrounds from the game, instead of requiring a user-supplied image.
 
 ## Getting Started
 
@@ -48,57 +57,65 @@ PUBLIC_CDN_URL=https://cdn.example.com
 
 ## URL Parameters
 
-| Param         | Example            | Notes                                                                        |
-|---------------|--------------------|------------------------------------------------------------------------------|
-| `model`       | `?model=pa-15`     | Base code, full game code (`pa15_5802`), directory name, or alias.           |
-| `only`        | `?only=pa-15`      | Display-only mode. Same matching as `model`, but a miss is a 404.            |
-| `variant`     | `&variant=damaged` | Case-insensitive. `damaged` maps to internal `destroy`. Omit for normal.     |
-| `ui`          | `&ui=0`            | Hide the model list and info panels on load. Ignored by `only`.              |
-| `transparent` | `&transparent=1`   | Transparent page background. `only` mode only.                               |
+| Param         | Example            | Notes                                                                                       |
+|---------------|--------------------|---------------------------------------------------------------------------------------------|
+| `model`       | `?model=pa-15`     | Gun name, costume name, base code, full game code (`pa15_5802`), directory name, or alias.  |
+| `only`        | `?only=pa-15`      | Display-only mode. Same matching as `model`, but a miss is an error rather than a fallback. |
+| `damaged`     | `&damaged`         | `&variant=damaged` lets you specify exact variant. `damaged` maps to internal `destroy`.    |
+| `ui`          | `&ui=0`            | Hide the model list and info panels on load. Ignored by `only`.                             |
+| `transparent` | `&transparent`     | Transparent page background. Path routes are transparent already.                           |
+| `theme`       | `&theme=paradeus`  | `sangvis` or `paradeus`. Anything else is ignored.                                          |
 
-A variant may also be given as a bare key, so `&damaged` is the same as `&variant=damaged`.
+Multiple names may resolve to the same model for example `?model=I, am Chaos`, `?model=iamchaos` and `/I-am-Chaos`.
 
-Invalid `model` falls back to a random gun. Missing `variant` falls back to the model's default.
+## Path Routes
+
+Prerendered static pages, one per model and variant. A model answers to its gun name, costume
+name, code and directory, so several paths reach the same page:
+
+```
+/pa-15
+/pa-15/damaged
+/shape-of-her-heart
+/88type-50001/damaged
+```
+
+These serve the model on its own, like `?only=`, and are always transparent, so the embedding page
+supplies whatever background it wants.
+
+Only the slug spellings above are prerendered as files.
 
 ### Display-only mode (`only`)
 
-`?only=<gun>` serves the viewer by itself without the control panels.
-
-Features only click and hold for focus tracking, and tapping a hitbox to play its motion and voice.
-Voice lines still play, with no caption text and no volume control.
+`?only=<gun>` serves the viewer by itself without the control panels, the same presentation as a
+path route. Both feature only click and hold for focus tracking, and tapping a hitbox to play its
+motion and voice. Voice lines still play, with no caption text and no volume control.
 
 In subdomain mode the hostname already names the model, so `?only` is written bare and the
-subdomain resolves it: `https://pa15.example.com/?only&variant=damaged`.
+subdomain resolves it: `https://pa15.example.com/?only&variant=damaged`. That is the one case
+where `?only` is needed, since there is no path form to use; elsewhere prefer a path route.
 
 ## Embedding
 
-The viewer is iframe-friendly. Typical embed, model only:
+The viewer is iframe-friendly. Open Direct Access, Embedding in the app: it builds a ready
+snippet for the selected model and variant, with a toggle for whether the control panel comes
+along. Copy that rather than writing one by hand.
 
-```html
-<iframe
-    src="https://your-host/?only=pa-15&transparent=1"
-    width="100%" height="600"
-    frameborder="0"
-></iframe>
-```
+The snippet already carries `style="background: transparent"`, since browsers paint an opaque
+iframe background by default. Add `allowtransparency="true"` for older engines.
 
-`transparent=1` drops the page background so the model composites onto the host page. Give the
-iframe itself a transparent background too, since browsers paint one by default:
+Everything below is for cases the panel does not cover.
 
-```html
-<iframe src="..." style="background: transparent" allowtransparency="true"></iframe>
-```
+### Framing headers
 
-To embed the full viewer instead, use `?model=pa-15&ui=0`. That hides the panels on load but keeps them reachable (top right button).
-
-### CORS / iframe headers
-
-For the viewer to render inside a third-party page, the host serving it must not block framing. Check that your deployment does **not** send:
+These control whether a third-party page may put the viewer in an iframe. They are set by whatever
+serves the app, and are unrelated to CORS. Check that your deployment does **not** send:
 
 - `X-Frame-Options: DENY` or `SAMEORIGIN`
 - `Content-Security-Policy: frame-ancestors 'self'` (or a list that excludes your embedder)
 
-SvelteKit and `@sveltejs/adapter-node` don't set these by default, but reverse proxies often do. To allow any origin:
+SvelteKit and `@sveltejs/adapter-node` don't set either by default, but reverse proxies often do. To
+allow any origin:
 
 ```nginx
 # nginx
@@ -112,9 +129,31 @@ header Content-Security-Policy "frame-ancestors *;"
 header -X-Frame-Options
 ```
 
-To allow specific sites only, replace `*` with a space-separated list, e.g. `frame-ancestors https://example.com https://*.example.org`.
+To allow specific sites only, replace `*` with a space-separated list, e.g.
+`frame-ancestors https://example.com https://*.example.org`. `X-Frame-Options` has no multi-origin
+form, so drop it entirely and let `frame-ancestors` do the work.
 
-The copy-link button and embed snippet's `allow="clipboard-write"` require no extra headers.
+### CORS headers
+
+Separate problem, and it applies whether or not the viewer is embedded. When assets are served from
+another origin (`PUBLIC_CDN_URL`, or the mirror a static build falls back to), the host serving
+**the assets** must allow cross-origin reads. WebGL is strict here: a texture fetched without CORS
+approval taints the canvas and the model fails to draw.
+
+```nginx
+# nginx, on the asset host
+add_header Access-Control-Allow-Origin "*" always;
+```
+
+```caddyfile
+# Caddy, on the asset host
+header Access-Control-Allow-Origin "*"
+```
+
+Same-origin deployments (`/assets` under the app itself, the `adapter-node` default) need none of
+this.
+
+The copy-link button and the embed snippet's `allow="clipboard-write"` require no extra headers.
 
 ## Data Files
 
@@ -127,34 +166,7 @@ The viewer ships with pre-extracted JSON metadata under `src/lib/data/`:
 - `aliases.json`, `costumes.json`, `names.json`: alias / display-name lookups
 - `live2d-overrides.json`: per-model render tweaks
 
-### Regenerating data from game files
-
-Extraction scripts live in `scripts/`. They require a full Unity `Assets/` tree from GFL (drop it in at project root or symlink it) and Python 3.10+ with `uv`.
-
-`extract_live2d.py` and `extract_voice_map.py` read STC tables through the `gfl-data-miner-python` submodule, so
-initialise it first (`git submodule update --init`). Only its `utils/format_stc.py` is used and that is pure stdlib,
-so the submodule's own `requirements.txt` does not need installing.
-
-`extract_all_audio.py` uses [vgmstream](https://vgmstream.org/) to decode `.acb.bytes` voice banks.
-Install the CLI and make sure `vgmstream-cli` is on `PATH`:
-
-```bash
-winget install vgmstream.vgmstream   # Windows
-brew install vgmstream               # macOS
-```
-
-Other platforms: grab a build from [the releases page](https://github.com/vgmstream/vgmstream/releases).
-
-```bash
-uv run scripts/extract_live2d.py        # live2d.json
-uv run scripts/extract_voice_map.py     # motions.json + voice.json
-uv run scripts/extract_gun_names.py     # names.json
-uv run scripts/extract_skin_names.py    # costumes.json
-uv run scripts/extract_all_audio.py     # decode .acb.bytes via vgmstream-cli
-uv run scripts/sync_assets_r2.py --copy # copy models+audio into static/assets/ and emit variants.json
-uv run scripts/validate_live2d_models.py
-uv run scripts/convert_unity_live2d.py  # converting Unity Live2D exports into Cubism 3 format.
-```
+To regenerate any of these from game files, see [`scripts/README.md`](scripts/README.md).
 
 ## Using the Controller Standalone
 

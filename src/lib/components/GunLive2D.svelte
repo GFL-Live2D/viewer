@@ -3,7 +3,6 @@
     import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
     import ErrorOverlay from '$lib/components/ErrorOverlay.svelte';
 
-    // Props (runes mode)
     let {
         characterEntry,
         variant,
@@ -17,13 +16,13 @@
         isBgMoveMode = false, // Received from parent
         isInitializing = false, // Initializing state during controller recreation
         displayOnly = false, // Embed mode: focus tracking and hitbox motions only
+        transparent = false, // Page background is see-through, so overlays add no scrim
     } = $props();
 
     // Multi-touch drag tracking: cache active pointers to avoid resetting on second finger
     const activePointers = new Map<number, { x: number; y: number }>();
 
     // Reactive Load: Reload whenever characterEntry or variant changes
-    // Guard against infinite loops by checking signature
     let lastLoadedSignature = '';
 
     let awaitingData = $derived(!!characterEntry && !!variant && !motionData);
@@ -84,16 +83,13 @@
     function onMouseDown(e: PointerEvent) {
         if (!controller) return;
 
-        // Middle Click: Always drag (force=true, always enabled)
         if (e.button === 1) {
             if (displayOnly) return;
             e.preventDefault();
             const wasEmpty = activePointers.size === 0;
-            // Only track primary pointer for drag (secondary pointers reserved for gestures)
             if (e.isPrimary) {
                 activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-                // Only call startDrag once when first pointer touches down
                 if (wasEmpty) {
                     const midpoint = getMidpoint(activePointers);
                     controller.startDrag(midpoint.x, midpoint.y, true);
@@ -103,22 +99,16 @@
             return;
         }
 
-        // Left Click: Works in moveMode key (drag) or normal mode (look at cursor)
         if (e.button === 0) {
-            // If background move mode is enabled, let the event bubble to parent
             if (isBgMoveMode) return;
 
             e.preventDefault();
-            // Only track primary pointer for drag (secondary pointers reserved for gestures)
             if (e.isPrimary) {
                 const wasEmpty = activePointers.size === 0;
                 activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-                // Only call startDrag once when first pointer touches down
                 if (wasEmpty) {
                     const midpoint = getMidpoint(activePointers);
-                    // startDrag will automatically ignore the drag if not in moveMode (isDragging=false)
-                    // but we still want to track the pointer for handleDrag -> processMove (look)
                     controller.startDrag(midpoint.x, midpoint.y, false);
                 }
             }
@@ -129,13 +119,10 @@
     function onMouseMove(e: PointerEvent) {
         if (!controller || activePointers.size === 0) return;
 
-        // Only update drag if this is a tracked pointer (primary only)
         if (!activePointers.has(e.pointerId)) return;
 
-        // Update cached position for primary pointer
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-        // Drag uses primary pointer position only
         const pointer = activePointers.get(e.pointerId);
         if (pointer) {
             controller.handleDrag(pointer.x, pointer.y);
@@ -145,18 +132,14 @@
     function onMouseUp(e: PointerEvent) {
         if (!controller) return;
 
-        // Only process if this was a tracked drag pointer
         if (!activePointers.has(e.pointerId)) return;
 
-        // Remove this pointer from drag cache
         activePointers.delete(e.pointerId);
 
-        // Only call endDrag when all pointers are released
         if (activePointers.size === 0) {
             controller.endDrag();
         }
 
-        // Release pointer capture if held
         try {
             (e.target as Element).releasePointerCapture(e.pointerId);
         } catch (ex) {
@@ -174,10 +157,10 @@
         e.preventDefault();
         const delta = e.deltaY < 0 ? 1 : -1;
         const newZoom = controller.getCurrentZoom() + delta;
-        controller.setZoom(newZoom, { hard: true });
+        const rect = canvas.getBoundingClientRect();
+        controller.zoomAtPoint(newZoom, e.clientX - rect.left, e.clientY - rect.top);
     }
 
-    // Public Methods
     export const reload = (resetZoom: boolean = true) => load(resetZoom);
     export const getController = () => controller;
 </script>
@@ -199,6 +182,7 @@
 <!-- Loading Overlay -->
 {#if controller?.state.loading === ModelLoadingState.LOADING || isInitializing || awaitingData}
     <CanvasOverlay
+        bg={transparent ? 'bg-transparent' : 'bg-background/80'}
         leftInset={overlayInsets.left}
         rightInset={overlayInsets.right}
         bottomInset={overlayInsets.bottom}

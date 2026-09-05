@@ -189,7 +189,7 @@
     height: 16px;
     width: 8px;
     border-radius: 2px;
-    background: white;
+    background: var(--color-accent);
     border: 1px solid var(--color-accent);
     margin-top: -6px;
     transition:
@@ -225,7 +225,7 @@
     width: 8px;
     border: 1px solid var(--color-accent);
     border-radius: 2px;
-    background: white;
+    background: var(--color-accent);
     cursor: pointer;
     box-sizing: border-box;
     transition:
@@ -245,16 +245,16 @@
         0 0 26px color-mix(in srgb, var(--accent-primary) 14%, transparent);
 }
 
-/* Hover excludes :active so the pressed accent fill is not overridden by source order */
+/* Hover excludes :active so the pressed scale and glow are not overridden by source order */
 .range-slider:hover:not(:active)::-webkit-slider-thumb {
-    background: color-mix(in srgb, var(--color-accent) 10%, white);
+    background: color-mix(in srgb, white 15%, var(--color-accent));
     box-shadow:
         0 0 4px var(--accent-primary),
         0 0 8px color-mix(in srgb, var(--accent-primary) 60%, transparent);
 }
 
 .range-slider:hover:not(:active)::-moz-range-thumb {
-    background: color-mix(in srgb, var(--color-accent) 10%, white);
+    background: color-mix(in srgb, white 15%, var(--color-accent));
     box-shadow:
         0 0 4px var(--accent-primary),
         0 0 8px color-mix(in srgb, var(--accent-primary) 60%, transparent);
@@ -367,4 +367,164 @@
 * {
     scrollbar-color: var(--color-accent) transparent;
     scrollbar-width: thin;
+}
+
+/* Resolved density, read by the toggle click handler to know which way to switch */
+.model-list,
+.density-toggle {
+    --density: list;
+}
+
+.model-list[data-density='table'],
+.density-toggle[data-density='table'] {
+    --density: table;
+}
+
+@media (max-width: 767.98px) {
+    .model-list[data-density='auto'],
+    .density-toggle[data-density='auto'] {
+        --density: table;
+    }
+}
+
+.density-toggle .density-label-table,
+.density-toggle .density-label-list {
+    display: none;
+}
+
+.density-toggle .density-label-list {
+    display: inline-flex;
+}
+
+.density-toggle[data-density='table'] .density-label-list {
+    display: none;
+}
+
+.density-toggle[data-density='table'] .density-label-table {
+    display: inline-flex;
+}
+
+@media (max-width: 767.98px) {
+    .density-toggle[data-density='auto'] .density-label-list {
+        display: none;
+    }
+
+    .density-toggle[data-density='auto'] .density-label-table {
+        display: inline-flex;
+    }
+}
+
+/* List is the base styling, table overrides it below */
+.model-list {
+    padding: 1rem;
+}
+
+.model-list .model-list-rows > * + * {
+    margin-top: 0.75rem;
+}
+
+.model-list .model-row {
+    overflow: hidden;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-border);
+    background-color: color-mix(in srgb, var(--color-background-secondary) 50%, transparent);
+}
+
+.model-list .model-row:hover {
+    border-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+.model-list .model-row.is-selected {
+    border-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.model-list .model-cell,
+.model-list .model-row-id {
+    padding-block: 0.75rem;
+}
+
+.model-list .variant-cell {
+    padding-block: 0.5rem;
+}
+
+.model-list .model-row-id-text {
+    width: 2rem;
+    text-align: center;
+}
+
+/* Table styling, for an explicit choice at any width. The narrow-viewport default is below. */
+.model-list[data-density='table'] {
+    padding: 0;
+}
+
+.model-list[data-density='table'] .model-list-rows > * + * {
+    margin-top: 0;
+}
+
+.model-list[data-density='table'] .model-row {
+    overflow: visible;
+    border-radius: 0;
+    border: 1px solid var(--color-border);
+    border-top-width: 0;
+    border-left-width: 0;
+    background-color: transparent;
+}
+
+.model-list[data-density='table'] .model-row:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+.model-list[data-density='table'] .model-row.is-selected {
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.model-list[data-density='table'] .model-cell,
+.model-list[data-density='table'] .model-row-id,
+.model-list[data-density='table'] .variant-cell {
+    padding-block: 0.25rem;
+}
+
+.model-list[data-density='table'] .model-row-id-text {
+    width: 1.25rem;
+    text-align: right;
+}
+
+@media (max-width: 767.98px) {
+    .model-list[data-density='auto'] {
+        padding: 0;
+    }
+
+    .model-list[data-density='auto'] .model-list-rows > * + * {
+        margin-top: 0;
+    }
+
+    .model-list[data-density='auto'] .model-row {
+        overflow: visible;
+        border-radius: 0;
+        border: 1px solid var(--color-border);
+        border-top-width: 0;
+        border-left-width: 0;
+        background-color: transparent;
+    }
+
+    .model-list[data-density='auto'] .model-row:hover {
+        background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
+    }
+
+    .model-list[data-density='auto'] .model-row.is-selected {
+        background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    }
+
+    .model-list[data-density='auto'] .model-cell,
+    .model-list[data-density='auto'] .model-row-id,
+    .model-list[data-density='auto'] .variant-cell {
+        padding-block: 0.25rem;
+    }
+
+    .model-list[data-density='auto'] .model-row-id-text {
+        width: 1.25rem;
+        text-align: right;
+    }
 }

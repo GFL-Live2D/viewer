@@ -14,11 +14,22 @@ export function normaliseKey(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function shareName(entry: Pick<Live2DModelIndex, 'code' | 'costumeName'>): string {
+    const mod = /Mod(_\d+)?$/i.test(entry.code);
+    return mod || !entry.costumeName ? entry.code : entry.costumeName;
+}
+
+// Hostname labels cannot carry spaces or punctuation
 export function shareLabel(entry: Pick<Live2DModelIndex, 'code' | 'costumeName'>): string {
-    if (/Mod(_\d+)?$/i.test(entry.code) || !entry.costumeName) {
-        return normaliseKey(entry.code);
-    }
-    return normaliseKey(entry.costumeName);
+    return normaliseKey(shareName(entry));
+}
+
+// A query value only has to survive encoding, so it keeps the spacing that makes it readable
+export function shareQueryLabel(entry: Pick<Live2DModelIndex, 'code' | 'costumeName'>): string {
+    return shareName(entry)
+        .trim()
+        .replace(/[^a-zA-Z0-9 ]/g, ' ')
+        .replace(/\s+/g, ' ');
 }
 
 // Hyphens survive normaliseKey's stripping, so a readable path still matches a flat one

@@ -4,7 +4,7 @@
     import { loadSingleModelData } from '$lib/model-data/gun';
     import { resolveModel } from '$lib/modelResolve';
     import { resolveVariant } from '$lib/model-data/variantPick';
-    import { requestedVariant } from '$lib/variantQuery';
+    import { flagEnabled, requestedVariant } from '$lib/variantQuery';
     import type { Live2DModelIndex } from '$lib/model-data/live2d';
 
     let { models, aliases, assetBaseUrl, target, params } = $props<{
@@ -17,7 +17,7 @@
 
     // Embeds name one model, so a miss is an error rather than a substitution
     const model = $derived(target ? resolveModel(models, target, aliases) : null);
-    const transparent = $derived(params.get('transparent') === '1');
+    const transparent = $derived(flagEnabled(params, 'transparent'));
 
     const resolveError = $derived(
         !target

@@ -1,6 +1,5 @@
 <script lang="ts">
     import { onDestroy, untrack } from 'svelte';
-    import Fuse from 'fuse.js';
     import { slide } from 'svelte/transition';
     import { browser } from '$app/environment';
     import { afterNavigate, replaceState } from '$app/navigation';
@@ -28,6 +27,9 @@
     import ResizeHandle from '$lib/components/ResizeHandle.svelte';
     import { Live2DController, ModelLoadingState } from '$lib/live2d/Live2DController.svelte';
     import { resolveModel } from '$lib/modelResolve';
+    import { filterModels, buildModelNames } from '$lib/modelFilter';
+    import { buildQuery } from '$lib/shareLinks';
+    import { sidePanelMinWidth, desktopMinWidth } from '$lib/breakpoints';
     import names from '$lib/data/names.json';
     import censorRules from '$lib/data/censor.json';
     import * as Resizable from '$lib/components/ui/resizable';
@@ -79,7 +81,6 @@
         subdomainModel?: Live2DModelIndex | null;
     }>();
 
-    // Derived from uiState store for local access
     let isLeftPanelOpen = $derived($uiState.isLeftPanelOpen);
     let isAllPanelsExpanded = $derived($uiState.isAllPanelsExpanded);
     let isParametersPanelOpen = $derived($uiState.isParametersPanelOpen);
@@ -89,24 +90,19 @@
     let hideUI = $state(hideUIOnLoad);
     let shouldApplyInitialCaptionMode = true;
 
-    // Loading state during controller initialization (before loadCharacter starts)
     let isInitializing = $state(false);
 
-    // Button visibility timer (separate from panel logic)
     let buttonFadeTimer: NodeJS.Timeout | undefined = undefined;
 
-    // Background Manager bindings
     let bgZoom = $state(0);
     let bgHasImage = $state(false);
     let bgManager = $state<BackgroundManager | undefined>();
 
-    // Background State for Live2D Controller sync
     let backgroundImage = $state('');
     let bgX = $state(0);
     let bgY = $state(0);
     let bgScale = $state(1);
 
-    // Sync background to controller
     $effect(() => {
         if (controller) {
             controller.setBackground(backgroundImage);
@@ -121,13 +117,10 @@
 
     let isCopied = $state(false);
 
-    // Base host for share-link examples (current origin)
     let baseHost = $derived.by(() => {
         if (typeof window === 'undefined') return '';
         return window.location.host;
     });
-
-    // State synced with store (selectedModel, selectedVariant, etc. imported from store)
 
     // Panels build their own share links, so the routing mode has to reach them
     $effect(() => {
@@ -135,36 +128,16 @@
         storeSubdomain.set(subdomain);
     });
 
-    // Initialize model names and variants in store from props
-    $effect(() => {
-        if (models.length > 0) {
-            const nameMap: Record<string, string> = {};
-            for (const model of models) {
-                const nameData = (names as any)[model.id];
-                nameMap[model.id] = nameData?.en_name || model.gunName || model.code;
-            }
-            modelNames.set(nameMap);
-        }
-    });
+    // Set outside an effect so the prerendered HTML carries the list instead of hydrating into it
+    modelNames.set(buildModelNames(models));
+    variantsByModel.set(variantsByModelProp);
 
-    $effect(() => {
-        variantsByModel.set(variantsByModelProp);
-    });
-
-    // Control Panel State (Right Panel)
     let isBgMoveMode = $state(false); // Managed by BackgroundManager
 
-    // State synced with store (followParameterValues, currentParameters, sliderValues, currentParts, partOpacities imported)
-
-    // Read-only status from GunLive2D
-    // Data now accessed directly from controller.state.*
-
-    // Controller Ownership State
     let controller = $state<Live2DController>();
     let canvas = $state<HTMLCanvasElement>();
     let controllerKey = $state(0); // Used to force re-render/reset if needed
 
-    // Mobile/Tablet Tabbed Panel State
     let activeTab = $state<'info' | 'motions' | 'params' | 'parts'>('info');
     let isTabPanelOpen = $state(true); // For tablet collapse
     let drawerHeight = $state(45); // Mobile drawer height as percentage (40-85%)
@@ -178,8 +151,8 @@
         browser ? { width: window.innerWidth, height: window.innerHeight } : null,
     );
 
-    let isDesktopWidth = $derived((viewport?.width ?? 0) >= 1800);
-    let hasSidePanelLayout = $derived((viewport?.width ?? 0) >= 768);
+    let isDesktopWidth = $derived((viewport?.width ?? 0) >= desktopMinWidth());
+    let hasSidePanelLayout = $derived((viewport?.width ?? 0) >= sidePanelMinWidth());
     let viewportHeight = $derived(viewport?.height ?? 0);
 
     $effect(() => {
@@ -205,61 +178,16 @@
         };
     });
 
-    // Note: modelSearchTerms passed as prop, already computed server-side
-
-    type SearchableModel = Live2DModelIndex & { displayName: string; numericId: string; aliasTerms: string };
-
-    // Compute filteredModels from store state and props
-    let filteredModels = $derived.by(() => {
-        const seenDirectories = new Set<string>();
-
-        const candidates: SearchableModel[] = models
-            .map((m: Live2DModelIndex) => ({
-                ...m,
-                displayName: m.gunName || String($modelNames[m.id] ?? m.code ?? m.id).replace(/_/g, ' '),
-                numericId: m.id.match(/\d+$/)?.[0] || '',
-                aliasTerms: modelSearchTerms[m.id] || '',
-            }))
-            .filter((m: SearchableModel) => {
-                if (!$filterDuplicates) return true;
-                // Filter out Mod_\d+ entries
-                if (/Mod_\d+/i.test(m.code)) return false;
-                // Filter out entries with duplicate directories
-                if (seenDirectories.has(m.directory)) return false;
-                seenDirectories.add(m.directory);
-                return true;
-            });
-
-        const query = $searchQuery.trim();
-        if (!query) {
-            return candidates.sort((a, b) => {
-                if ($sortBy === 'gun') {
-                    return a.displayName.localeCompare(b.displayName);
-                } else if ($sortBy === 'name') {
-                    return (a.costumeName || '').localeCompare(b.costumeName || '');
-                } else {
-                    return parseInt(a.numericId || '0') - parseInt(b.numericId || '0');
-                }
-            });
-        }
-
-        // Sort-mode dropdown doubles as search priority, so its favoured field outranks
-        const weights: Record<'numericId' | 'displayName' | 'code' | 'costumeName' | 'aliasTerms', number> = {
-            numericId: $sortBy === 'id' ? 3 : 1,
-            displayName: $sortBy === 'gun' ? 3 : 1,
-            costumeName: $sortBy === 'name' ? 3 : 1,
-            code: 1,
-            aliasTerms: 1,
-        };
-
-        const fuse = new Fuse(candidates, {
-            keys: Object.entries(weights).map(([name, weight]) => ({ name, weight })),
-            threshold: 0.35,
-            ignoreLocation: true,
-        });
-
-        return fuse.search(query).map((result) => result.item);
-    });
+    let filteredModels = $derived(
+        filterModels({
+            models,
+            modelNames: $modelNames,
+            modelSearchTerms,
+            filterDuplicates: $filterDuplicates,
+            searchQuery: $searchQuery,
+            sortBy: $sortBy,
+        }),
+    );
 
     let selectedModelName = $derived($modelNames[$selectedModel] ?? $selectedModel?.replace(/_/g, ' ') ?? '');
 
@@ -307,7 +235,6 @@
     // Fallback source for idle-only damaged variants lacking their own voicelines.
     let filteredNormalVoiceData = $derived(modelData?.voiceData?.['normal']);
 
-    // Lifecycle: create controller when canvas is available
     $effect(() => {
         if (canvas && !controller) {
             controller = new Live2DController(canvas);
@@ -349,9 +276,13 @@
         });
     });
 
-    // Sync to store for component access
     $effect(() => {
         storeController.set(controller);
+    });
+
+    // Initial set runs during SSR, where effects do not, so the prerendered list is not empty
+    storeFilteredModels.set(filteredModels);
+    $effect(() => {
         storeFilteredModels.set(filteredModels);
     });
 
@@ -374,10 +305,7 @@
         const entry = $selectedCharacterEntry;
         if (!entry) return 'Live2D Viewer';
 
-        // Name resolution: try derived store, fallback to manual lookup for SSR/init
         let n = selectedModelName;
-        // If selectedModelName is derived from store, it might be empty initially in some contexts if store isn't set yet,
-        // so we manually look it up if needed.
         if ((!n || n === '') && entry) {
             const nameData = (names as any)[entry.id];
             n = nameData?.en_name || entry.gunName || entry.code;
@@ -386,13 +314,11 @@
 
         const c = entry.costumeName;
 
-        // Variant suffix
         const v = currentDisplayVariant === 'normal' ? '' : currentDisplayVariant;
 
         let t = n;
         if (c) t += `: ${c}`;
         if (v) {
-            // Capitalize first letter of variant for title
             const vCap = v.charAt(0).toUpperCase() + v.slice(1);
             t += ` (${vCap})`;
         }
@@ -400,17 +326,6 @@
         return t;
     });
 
-    function buildModelParams(): URLSearchParams | null {
-        if (!$selectedCharacterEntry) return null;
-
-        const params = new URLSearchParams({ model: $selectedCharacterEntry.code.toLowerCase() });
-        if (currentDisplayVariant && currentDisplayVariant !== 'normal') {
-            params.set('variant', currentDisplayVariant);
-        }
-        if (hideUI) params.set('ui', '0');
-
-        return params;
-    }
 
     async function handleCopyLink() {
         const copied = await copyShareLink($selectedCharacterEntry, {
@@ -438,19 +353,16 @@
         if (controller?.state.loading === ModelLoadingState.READY) {
             setTimeout(() => {
                 applyDecensor();
-                // Reposition model if side panel is open on tablet
-                const isTablet = window.innerWidth >= 768 && window.innerWidth < 1800;
+                const isTablet = window.innerWidth >= sidePanelMinWidth() && window.innerWidth < desktopMinWidth();
                 if (isTablet && isLeftPanelOpen && !hideUI) {
                     controller?.fitModelToScreen({ x: 200 });
                 } else if (!hasSidePanelLayout && !hideUI && canvasInsets.bottom) {
-                    // Center within the area above the bottom drawer on mobile
                     controller?.fitModelToScreen({ y: -canvasInsets.bottom / 2 });
                 }
             }, 50);
         }
     });
 
-    // Clear initializing state when controller is ready to load
     $effect(() => {
         if (controller && isInitializing) {
             isInitializing = false;
@@ -492,7 +404,6 @@
         if (!$selectedCharacterEntry || !controller) return;
 
         if ($decensor) {
-            // Reset all parts to visible
             controller.resetPartOpacities();
         } else {
             const modelCode = $selectedCharacterEntry.code || $selectedCharacterEntry.id;
@@ -503,7 +414,6 @@
             const partsToCensor = rules[$selectedVariant];
             if (!Array.isArray(partsToCensor)) return;
 
-            // Set censored parts to transparent
             partsToCensor.forEach((partId: string) => {
                 controller?.setPartOpacity(partId, 0);
             });
@@ -556,7 +466,6 @@
             }
 
             if (initialModel) {
-                // Determine default variant (query first, then 'normal')
                 const variants = $variantsByModel[initialModel.directory] ?? [];
                 let targetVariant = '';
 
@@ -585,53 +494,53 @@
         // In subdomain mode the hostname carries the model, so the query stays as the visitor left it
         if (!routerReady || subdomainMode || !$selectedModel) return;
 
-        const params = buildModelParams();
-        if (!params) return;
+        if (!$selectedCharacterEntry) return;
 
-        const existing = new URLSearchParams(window.location.search);
-        for (const [key, value] of existing) {
-            if (key === 'model' || key === 'variant' || key === 'ui') continue;
-            if (!params.has(key)) params.append(key, value);
-        }
+        const carry = new URLSearchParams(window.location.search);
+        for (const key of ['model', 'variant', 'ui']) carry.delete(key);
 
-        const next = `${window.location.pathname}?${params.toString()}`;
-        if (next !== `${window.location.pathname}${window.location.search}`) {
+        // A space reads better than +, and the browser encodes it on the way into the address bar
+        const query = buildQuery({
+            model: $selectedCharacterEntry,
+            variant: currentDisplayVariant,
+            hideUI,
+            carry,
+            readable: true,
+        });
+
+        const next = `${window.location.pathname}?${query}`;
+        // The browser reports search encoded, so both sides are compared through the same parser
+        const settled = new URLSearchParams(query).toString();
+        if (settled !== new URLSearchParams(window.location.search).toString()) {
             replaceState(next, {});
         }
     });
 
-    // Reset UI state (parameters, parts, animations)
     function resetUIState() {
         if (controller) {
             controller.stopAllMotions();
         }
     }
 
-    // Reset handler exposed to UI
     function handleReset() {
         resetUIState();
         resetModel();
     }
 
-    // Toggle UI visibility
     function handleRevealToggle() {
         hideUI = !hideUI;
     }
 
-    // Background upload handler for mobile/tablet
     function handleBgUpload(e: Event) {
         const target = e.target as HTMLInputElement;
         const file = target.files?.[0];
         if (file && bgManager) {
             bgManager.loadAndSetBackgroundImage(file);
         }
-        // Reset input so same file can be selected again
         target.value = '';
     }
 
-    // Keyboard shortcuts
     function handleKeyboardShortcuts(e: KeyboardEvent) {
-        // Only trigger if not typing in an input
         if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
         switch (e.key.toLowerCase()) {
@@ -648,12 +557,10 @@
         }
     }
 
-    // Panel toggle function
     function togglePanel() {
         uiState.update((s) => ({ ...s, isLeftPanelOpen: !s.isLeftPanelOpen }));
     }
 
-    // Mobile drawer resize handlers
     function handleDragStart(e: PointerEvent) {
         dragStartY = e.clientY;
         dragStartHeight = drawerHeight;
@@ -665,16 +572,13 @@
         const deltaPercent = (deltaY / viewportHeight) * 100;
         const newHeight = dragStartHeight + deltaPercent;
 
-        // Clamp between 5% and 100% (allow full expansion)
         drawerHeight = Math.max(5, Math.min(100, newHeight));
     }
 
     function handleDragEnd() {
-        // Could save to localStorage here if needed
     }
 
     function handleDoubleClick() {
-        // Toggle between 45% and 75%
         drawerHeight = drawerHeight > 60 ? 45 : 75;
     }
 
@@ -751,12 +655,10 @@
         <!-- DESKTOP/TABLET LAYOUT (md+) -->
         <div class="hidden w-full justify-between md:flex">
             <!-- LEFT PANEL WRAPPER (desktop 2xl+: 600px, tablet md-xl: 400px) -->
-            <!-- Outer div handles transform (slide), inner div handles opacity -->
             <div
                 class="absolute top-0 bottom-0 left-0 z-20 flex w-[400px] flex-col transition-transform duration-600 ease-in-out 2xl:w-[600px]"
                 class:-translate-x-full={!isLeftPanelOpen}
             >
-                <!-- Content Container (Handles Opacity) -->
                 <div
                     class="border-border bg-background-secondary/95 flex h-full w-full flex-col overflow-hidden border-r transition-opacity duration-600 ease-in-out"
                     style="opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI ? 'none' : 'auto'};"
@@ -862,7 +764,6 @@
             </div>
 
             <!-- PANELS PARENT CONTAINER (desktop only, 2xl+) -->
-            <!-- Outer div handles transform (slide), inner div handles opacity -->
             <div
                 class="absolute top-0 right-0 bottom-0 z-20 hidden transition-transform ease-in-out select-none 2xl:flex {hideUI
                     ? 'translate-x-full'
@@ -904,7 +805,6 @@
                     <PanelControls {bgHasImage} bind:isBgMoveMode bind:bgZoom {bgManager} {hideUI} />
                 </div>
 
-                <!-- Content Wrapper (Handles Opacity) -->
                 <div
                     class="flex h-full w-full transition-opacity duration-600 ease-in-out"
                     style="opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI ? 'none' : 'auto'};"
@@ -921,7 +821,6 @@
                             id="panel-a"
                             class="border-border bg-background-secondary/95 flex h-full w-[300px] flex-col border-l"
                         >
-                            <!-- PARAMETERS SECTION: Top 2/3 -->
                             <Resizable.PaneGroup direction="vertical" class="h-full w-full">
                                 <!-- PARAMETERS SECTION: Top 2/3 (Default 65%) -->
                                 <Resizable.Pane defaultSize={65}>
@@ -945,7 +844,6 @@
                         inert={hideUI}
                     >
                         <!-- Model Info (collapsible on mobile) -->
-                        <!-- Model Info -->
                         <div class="border-border bg-background-secondary/50 border-b">
                             <ModelInfoPanel onSwapVariant={selectModelVariant} />
                         </div>
@@ -982,7 +880,6 @@
                 </div>
             </div>
         </div>
-        <!-- /DESKTOP/TABLET LAYOUT -->
 
         <!-- SPEED DIALS (Mobile/Tablet only, hidden on desktop) -->
         <div class="pointer-events-none 2xl:hidden">
@@ -1059,7 +956,7 @@
                 <Popover.Root>
                     <Popover.Trigger
                         class="border-border bg-background-secondary/95 text-foreground-tertiary hover:text-foreground fixed right-4 z-35 flex h-10 w-10 items-center justify-center rounded-lg border shadow-lg transition md:hidden"
-                        style="bottom: calc({drawerHeight}vh + 1rem); opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI
+                        style="bottom: calc({drawerHeight}vh + 1rem - 12px); opacity: {hideUI ? 0 : 1}; pointer-events: {hideUI
                             ? 'none'
                             : 'auto'};"
                     >

@@ -40,15 +40,15 @@
     {#if $controller?.state.loading === ModelLoadingState.READY}
         <div class="custom-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto p-4">
             {#each $controller?.state.parts ?? [] as part (part.id)}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                    class="flex flex-col gap-1"
-                    onmouseenter={() => hoverPart(part.id)}
-                    onmouseleave={() => hoverPart(null)}
-                    onfocusin={() => hoverPart(part.id)}
-                    onfocusout={() => hoverPart(null)}
-                >
-                    <div class="flex items-center gap-2">
+                <div class="flex flex-col gap-1">
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                        class="flex items-center gap-2"
+                        onmouseenter={() => hoverPart(part.id)}
+                        onmouseleave={() => hoverPart(null)}
+                        onfocusin={() => hoverPart(part.id)}
+                        onfocusout={() => hoverPart(null)}
+                    >
                         <label
                             for="part-opacity-{part.index}"
                             class="user-select-none text-foreground-secondary min-w-0 flex-1 truncate text-xs"

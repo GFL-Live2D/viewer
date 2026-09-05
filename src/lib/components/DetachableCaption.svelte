@@ -19,17 +19,13 @@
     let panelRef: HTMLDivElement | null = $state(null);
     let portalContainer: HTMLDivElement | null = null;
 
-    // Position and size tracked for the panel
-    // Default size and position (centered-ish)
     let pos = $state({ x: 0, y: 0 });
     let size = $state({ width: 400, height: 'auto' as number | 'auto' });
 
-    // Dragging state
     let isDragging = $state(false);
     let dragOffset = { x: 0, y: 0 };
 
     onMount(async () => {
-        // Create portal container at body level
         portalContainer = document.createElement('div');
         portalContainer.id = 'detachable-caption-portal';
         document.body.appendChild(portalContainer);
@@ -60,7 +56,6 @@
             let newX = e.clientX - dragOffset.x;
             let newY = e.clientY - dragOffset.y;
 
-            // Hard clamp to window bounds
             const maxX = window.innerWidth - (panelRef?.offsetWidth || 400);
             const maxY = window.innerHeight - (panelRef?.offsetHeight || 100);
 
@@ -73,37 +68,30 @@
     }
 
     function startDrag(e: PointerEvent) {
-        // Safe check for panel ref
         if (!panelRef) return;
 
         const target = e.target as HTMLElement;
         if (target.closest('.no-drag')) return;
 
-        // Check if we are clicking on the resize handle area (right edge or bottom right corner)
         // Native resize handles are usually around 15-20px, we use 30px to be safe and comfortable
         const rect = panelRef.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
 
-        // If within 30px of right edge, ignore drag (let browser handle resize)
         if (offsetX > rect.width - 30) return;
 
-        // Also check bottom edge for corner resizing
         if (offsetY > rect.height - 30) return;
 
         isDragging = true;
-        // Calculate offset from top-left of the panel
         dragOffset.x = e.clientX - pos.x;
         dragOffset.y = e.clientY - pos.y;
 
         document.body.style.userSelect = 'none';
 
-        // Capture pointer on the panel to ensure smooth dragging even if mouse leaves element
         panelRef.setPointerCapture(e.pointerId);
     }
 
     function detach() {
-        // Set initial position to center-bottom of screen
         const startWidth = 400;
         const startX = (window.innerWidth - startWidth) / 2;
         const startY = window.innerHeight - 200; // 200px from bottom
@@ -119,7 +107,6 @@
         onDetachedChange?.(false);
     }
 
-    // Portal action to move element to body
     function portal(node: HTMLElement) {
         if (portalContainer) {
             portalContainer.appendChild(node);
@@ -217,7 +204,6 @@
         class="detachable-panel border-border/40 bg-background/80 fixed z-50 flex flex-col rounded-xl border pt-1 pr-8 pb-1 pl-1 shadow-2xl ring-1 ring-white/5 select-none"
         style="left: {pos.x}px; top: {pos.y}px; width: {size.width}px; resize: horizontal; overflow: hidden; min-width: 200px; max-width: 100vw;"
     >
-        <!-- Content -->
         <div class="p-3">
             <p class="text-foreground-secondary cursor-default text-base leading-relaxed font-medium drop-shadow-sm">
                 {#each caption.split('<>') as line, i (i)}
