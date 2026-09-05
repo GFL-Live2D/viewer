@@ -93,6 +93,47 @@ interface ExtendedInternalModel {
     };
 }
 
+export interface Live2DState {
+    loading: ModelLoadingState;
+    loadingStep: string | null;
+    error: string | null;
+    caption: string | null;
+    motionProgress: number;
+    showProgressBar: boolean;
+    isMotionPlaying: boolean;
+    motionGroups: string[];
+    currentMotionGroup: string | null;
+    currentMotionIndex: number;
+    scaleMultiplier: number;
+    focusWeight: number;
+    showHitboxDebug: boolean;
+    loadedVoiceKeys: Set<string>;
+    groupAudioState: Record<string, boolean>; // Cache for UI: "groupName:index" -> isLoaded
+    isMoveMode: boolean; // Move/drag mode toggle
+    isAlwaysFocus: boolean; // Always-on focus tracking toggle
+    parameters: Array<{
+        index: number;
+        name: string;
+        value: number;
+        min: number;
+        max: number;
+        missing: boolean;
+    }>;
+    parts: Array<{
+        id: string;
+        index: number;
+        opacity: number;
+    }>;
+    highlightHoveredPart: boolean; // Tint a part on the model while its label is hovered
+    overriddenParams: number[]; // Indices of parameters pinned to a manual value
+    isFrozen: boolean; // Suspend breath, physics, pose and focus so manual values hold still
+    motionsPaused: boolean; // Motions stopped and idle disabled until a motion is played
+    followParameterValues: boolean; // Auto-update parameters from animation
+    forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
+    renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
+    useCustomInitialPositioning: boolean; // Apply CanvasOrigin centering and live2d-overrides.json nudges on load
+}
+
 export class Live2DController {
     app: PIXI.Application;
     model: Live2DModel | undefined;
@@ -109,46 +150,7 @@ export class Live2DController {
     private captionInsets = { left: 0, right: 0, bottom: 0 };
     private isCanvasCaptionSuppressed = false;
 
-    public state = $state<{
-        loading: ModelLoadingState;
-        loadingStep: string | null;
-        error: string | null;
-        caption: string | null;
-        motionProgress: number;
-        showProgressBar: boolean;
-        isMotionPlaying: boolean;
-        motionGroups: string[];
-        currentMotionGroup: string | null;
-        currentMotionIndex: number;
-        scaleMultiplier: number;
-        focusWeight: number;
-        showHitboxDebug: boolean;
-        loadedVoiceKeys: Set<string>;
-        groupAudioState: Record<string, boolean>; // Cache for UI: "groupName:index" -> isLoaded
-        isMoveMode: boolean; // Move/drag mode toggle
-        isAlwaysFocus: boolean; // Always-on focus tracking toggle
-        parameters: Array<{
-            index: number;
-            name: string;
-            value: number;
-            min: number;
-            max: number;
-            missing: boolean;
-        }>;
-        parts: Array<{
-            id: string;
-            index: number;
-            opacity: number;
-        }>;
-        highlightHoveredPart: boolean; // Tint a part on the model while its label is hovered
-        overriddenParams: number[]; // Indices of parameters pinned to a manual value
-        isFrozen: boolean; // Suspend breath, physics, pose and focus so manual values hold still
-        motionsPaused: boolean; // Motions stopped and idle disabled until a motion is played
-        followParameterValues: boolean; // Auto-update parameters from animation
-        forceLipSync: boolean; // Enable library lip sync (audio-driven, additive to animation)
-        renderCaptionsOnCanvas: boolean; // Draw captions directly on canvas
-        useCustomInitialPositioning: boolean; // Apply CanvasOrigin centering and live2d-overrides.json nudges on load
-    }>({
+    public state: Live2DState = $state<Live2DState>({
         loading: ModelLoadingState.IDLE,
         loadingStep: 'Loading model data',
         error: null,
