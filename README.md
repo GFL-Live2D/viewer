@@ -24,7 +24,6 @@ This app is currently in beta. Assets are not included in this repository. You s
 
 - Multi-instance Live2D: load several models at once, control them independently, and layer them.
 - Browse and pick from default static and Live2D backgrounds from the game, instead of requiring a user-supplied image.
-- Reuse the renderer when switching models, instead of `resetModel` on every selection.
 
 ## Getting Started
 

@@ -798,6 +798,13 @@ export class Live2DController {
         coreModel?.setOverrideFlagForModelParameterRepeat?.(false);
     }
 
+    private removeWindowInteractionListeners() {
+        if (typeof window === 'undefined') return;
+        window.removeEventListener('pointermove', this.handleGlobalPointerMove);
+        window.removeEventListener('touchmove', this.handleGlobalTouchMove);
+        window.removeEventListener('pointerup', this.handleGlobalPointerUp);
+    }
+
     private setupInteraction() {
         const model = this.model;
         if (!model) return;
@@ -806,28 +813,19 @@ export class Live2DController {
 
         model.automator.autoHitTest = true;
 
-        if (this.state.isAlwaysFocus) {
-            window.addEventListener('pointermove', this.handleGlobalPointerMove);
-            window.addEventListener('touchmove', this.handleGlobalTouchMove, { passive: false });
-        } else {
-            if (model.internalModel?.focusController) {
-                model.internalModel.focusController.focus(0, 0, true);
-            }
-        }
-
-        model.on('pointerdown', (event: any) => {
-        });
-
-        model.on('pointerup', this.handleGlobalPointerUp);
+        // Runs once per model load against a reused window, so every listener drops its prior
+        // registration before re-adding
+        this.removeWindowInteractionListeners();
         window.addEventListener('pointerup', this.handleGlobalPointerUp);
 
         if (this.state.isAlwaysFocus) {
-            window.removeEventListener('pointermove', this.handleGlobalPointerMove);
             window.addEventListener('pointermove', this.handleGlobalPointerMove);
             window.addEventListener('touchmove', this.handleGlobalTouchMove, { passive: false });
         } else {
-            model.internalModel.focusController.focus(0, 0, true);
+            model.internalModel?.focusController?.focus(0, 0, true);
         }
+
+        model.on('pointerup', this.handleGlobalPointerUp);
 
         model.on('hit', (hitAreas: string[]) => {
             if (this.state.showProgressBar) {
@@ -862,6 +860,8 @@ export class Live2DController {
     private async setupGestureManager() {
         // Client-only: interact.js requires browser APIs
         if (!this.model || typeof window === 'undefined') return;
+        // Bound to the canvas, not the model, so a model swap must not stack a second set
+        if (this.gestureManager) return;
 
         try {
             const interact = (await import('interactjs')).default;
@@ -905,7 +905,7 @@ export class Live2DController {
                     this.directZoom = null;
                 });
 
-            this.gestureManager = { destroy: () => { } }; // Placeholder for cleanup compatibility
+            this.gestureManager = { destroy: () => interact(canvasElement).unset() };
         } catch (err) {
             // Silently ignore gesture manager initialization errors
         }
@@ -1792,10 +1792,8 @@ export class Live2DController {
     cleanup() {
         if (typeof window !== 'undefined') {
             window.removeEventListener('resize', this.handleResize);
-            window.removeEventListener('pointermove', this.handleGlobalPointerMove);
-            window.removeEventListener('touchmove', this.handleGlobalTouchMove);
-            window.removeEventListener('pointerup', this.handleGlobalPointerUp);
         }
+        this.removeWindowInteractionListeners();
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
         if (this.gestureManager) {
@@ -2156,6 +2154,8 @@ export class Live2DController {
         this.frozenEffects = undefined;
         this.state.isFrozen = false;
         this.state.motionsPaused = false;
+        // Names a group on the outgoing model, so resuming must not restore it onto the next one
+        this.originalIdleGroup = null;
 
         if (this.model) {
             try {

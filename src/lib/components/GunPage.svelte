@@ -141,7 +141,7 @@
 
     let controller = $state<Live2DController>();
     let canvas = $state<HTMLCanvasElement>();
-    let controllerKey = $state(0); // Used to force re-render/reset if needed
+    let controllerKey = $state(0); // Bumped to rebuild the renderer on reset
 
     let activeTab = $state<'info' | 'motions' | 'params' | 'parts'>('info');
     let isTabPanelOpen = $state(true); // For tablet collapse
@@ -375,8 +375,8 @@
     });
 
     function selectModelVariant(modelId: string, variant: string = 'normal') {
-        isInitializing = true;
-        resetModel();
+        // The renderer swaps models in place, so only a first selection waits on controller setup
+        isInitializing = !controller;
         selectedModel.set(modelId);
         selectedVariant.set(variant);
         preferredVariantKind.set(getDisplayVariant(variant) === 'damaged' ? 'damaged' : 'normal');
@@ -425,6 +425,8 @@
         }
     }
 
+    // Full renderer teardown. Reserved for the reset button, which is the way out of a frozen
+    // or otherwise stuck viewer; model switching reuses the live renderer instead.
     function resetModel() {
         if (controller) {
             controller.cleanup();
